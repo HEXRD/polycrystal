@@ -18,22 +18,26 @@ class SingleCrystal:
     """
 
 
-    def __init__.py(self, symm, cij, name="<no-name>"):
+    def __init__(self, symm, cij, name="<no-name>"):
         self.symm = symm
-        self.cij = np.array(cij).copy()
+        self.cij = np.atleast_1d(np.array(cij).copy())
         self.name = name
-        self._conductivity = self._to_tensor(symm, cij)
+        self._conductivity = self._to_tensor(symm, self.cij)
+
+    @property
+    def conductivity(self):
+        return self._conductivity
 
     @staticmethod
     def _to_tensor(symm, cij):
-        if sym.startswith(("iso", "cub")):
+        if symm.startswith(("iso", "cub")):
             c33 = c22 = c11 = cij[0]
 
-        elif sym.startswith("hex"):
+        elif symm.startswith("hex"):
             c22 = c11 = cij[0] # a
             c33 = cij[1] # c
 
-        elif sym.startswith("ort"):
+        elif symm.startswith("ort"):
             c11, c22, c33 = cij[:3]
 
         tensor = np.diag((c11, c22, c33))

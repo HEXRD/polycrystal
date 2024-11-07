@@ -40,6 +40,9 @@ class SingleCrystal:
         elif symm.startswith("ort"):
             c11, c22, c33 = cij[:3]
 
+        else:
+            raise RuntimeError(f"Unknown symmetry: {symm}")
+
         tensor = np.diag((c11, c22, c33))
 
         return tensor

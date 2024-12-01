@@ -5,7 +5,9 @@ import numpy as np
 DEFAULT_TOL = 1.0E-8
 
 
-def unique_vectors(a, tol=DEFAULT_TOL):
+def unique_vectors(
+        a, tol=DEFAULT_TOL, return_index=False, return_inverse=False
+):
     """return vectors in a which are unique within the tolerance
 
     Parameters
@@ -14,18 +16,41 @@ def unique_vectors(a, tol=DEFAULT_TOL):
        input array with `n` rows
     tol: float, default = DEFAULT_TOL
        tolerance to compare array values
+    return_index: bool, default = False
+       if True, return indices of `a` that give the unique vector
+    return_inverse: bool, default = False
+       if True, return indices that reconstruct the input
 
     Returns
     -------
-    array (m, k)
+    u: array (m, k)
        unique values of `a` within the tolerance
+    index: int array(m)
+       indices of unique elements of `a` (if `return_index` is True)
+    inverse: int array(n)
+       indices that reconstruct `a` (if `return_inverse` is True)
     """
     nr, nc = a.shape
     a_ind = a.argsort(axis=0)
     arank = _to_ranks(a, tol=tol)
-    u, index = np.unique(arank, axis=0, return_index=True)
+    out = np.unique(
+        arank, axis=0, return_index=return_index, return_inverse=return_inverse
+    )
 
-    return a[index]
+    if not return_index and not return_inverse:
+        return out
+
+    # Now, output is a tuple.
+    u = out[0]
+    retvals = [u]
+    ind = 1
+    if return_index:
+        retvals.append(out[ind])
+        ind += 1
+    if return_inverse:
+        retvals.append(out[ind])
+
+    return tuple(retvals)
 
 
 def _to_ranks(a, tol=DEFAULT_TOL):

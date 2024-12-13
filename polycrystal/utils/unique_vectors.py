@@ -34,23 +34,28 @@ def unique_vectors(
     a_ind = a.argsort(axis=0)
     arank = _to_ranks(a, tol=tol)
     out = np.unique(
-        arank, axis=0, return_index=return_index, return_inverse=return_inverse
+        arank, axis=0, return_index=True, return_inverse=return_inverse
     )
 
-    if not return_index and not return_inverse:
-        return out
+    # Output is a tuple since we always need the index, as we are sorting
+    # by rank.
 
-    # Now, output is a tuple.
-    u = out[0]
-    retvals = [u]
-    ind = 1
-    if return_index:
-        retvals.append(out[ind])
-        ind += 1
     if return_inverse:
-        retvals.append(out[ind])
+        _, index, inverse = out
+    else:
+        _, index = out
 
-    return tuple(retvals)
+    # Now, set up output to return.
+
+    u = a[index]
+
+    ret = (u,)
+    if return_index:
+        ret += (index,)
+    if return_inverse:
+        ret += (inverse,)
+
+    return u if len(ret) == 1 else ret
 
 
 def _to_ranks(a, tol=DEFAULT_TOL):

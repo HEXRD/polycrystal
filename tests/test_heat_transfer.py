@@ -1,7 +1,7 @@
 """Test thermal package"""
 import numpy as np
 
-from polycrystal.thermal.single_crystal import SingleCrystal
+from polycrystal.heat_transfer.single_crystal import SingleCrystal
 
 
 def test_tensor():

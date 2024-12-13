@@ -11,7 +11,7 @@ class SingleCrystal:
        name of symmetry
     cij: list | tuple | array
        sequence of independent conductivity  matrix values; for
-       isotropic/cubic: c11; hexagonal: (a, c); orthotropic: (a, b, c)
+       isotropic/cubic: c11; hexagonal: (a, c); orthorhombic: (a, b, c)
     name: str, optional
        name to use for the material
 

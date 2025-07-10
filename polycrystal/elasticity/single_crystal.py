@@ -7,7 +7,7 @@ from .moduli_tools import Isotropic
 SCALE_C44 = 2.0
 
 
-class SingleCrystal(object):
+class SingleCrystal:
     """Elastic single crystal
 
     Parameters
@@ -20,6 +20,14 @@ class SingleCrystal(object):
        hexagonal.
     name: str, optional
        name to use for the material
+    cte: float | array(3, 3)
+       coefficient of thermal expansion; a single value for isotropic materials
+       or a 3 x 3 array in the crystal frame
+
+    Attributes
+    ----------
+    cte:
+       coefficient of thermal expansion, if specified
 
     Methods
     -------
@@ -37,12 +45,21 @@ class SingleCrystal(object):
         Read from a text file and return new instance.
     """
 
-    def __init__(self, symm, cij, name='<no name>'):
+    def __init__(self, symm, cij, name='<no name>', cte=None):
         self.symm = symm
         self.cij = np.array(cij).copy()
         self.name = name
 
         self._stiffness = to_stiffness(symm, cij)
+
+        # Set CTE (coefficient of thermal expansion)
+        if cte is not None:
+            if isinstance(cte, np.ndarray):
+                if cte.shape != (3, 3):
+                    raise RuntimeError("CTE shape is not 3x3")
+                self.cte = cte
+            elif isinstance(cte, (float, int)):
+                self.cte = np.diag(3 * (cte,))
 
     @classmethod
     def from_K_G(cls, K, G, **kwargs):

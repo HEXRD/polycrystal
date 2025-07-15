@@ -219,7 +219,7 @@ def rotation_operator(R):
 
     If Rc = s (taking crystal components to sample), then
     L(M) = R*M*R^T, (taking crystal components, M, to sample components)
-"""
+    """
     L = np.zeros((6,6))
     id = np.identity(6)
     for i in range(6):

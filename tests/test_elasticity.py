@@ -1,5 +1,6 @@
 """Unit tests for single crystal elasticity"""
 import numpy as np
+import pytest
 
 from polycrystal.elasticity import single_crystal
 
@@ -42,6 +43,44 @@ class TestSingleCrystal:
             'hexagonal', [1.0,  0.0,  0.0,  1.0,  0.5]
         )
         assert maxdiff(sx.stiffness, self.ID_6X6) < TOL
+
+
+class TestThermalExpansion:
+
+    def test_cte_none(self):
+
+        # From float.
+        sx = single_crystal.SingleCrystal.from_E_nu(1, 0)
+        assert not hasattr(sx, "cte")
+
+    def test_cte_float(self):
+
+        # From float.
+        cte = 1.2e-3
+        sx = single_crystal.SingleCrystal.from_E_nu(1, 0, cte=cte)
+        assert np.allclose(sx.cte, np.diag(3 * (cte,)))
+
+    def test_cte_array33(self):
+
+        # From float.
+        arr = np.array([
+            [1.0, 2.9, 0.3],
+            [-1.3, 4.6, 0.9],
+            [3.1, 41, 5.9],
+        ])
+        sx = single_crystal.SingleCrystal.from_E_nu(1, 0, cte=arr)
+        assert np.allclose(sx.cte, arr)
+
+    def test_cte_array_shape(self):
+
+        # From float.
+        arr = np.array([
+            [1.0, 2.9, 0.3],
+            [-1.3, 4.6, 0.9],
+        ])
+        with pytest.raises(RuntimeError):
+            sx = single_crystal.SingleCrystal.from_E_nu(1, 0, cte=arr)
+
 
 """
 class TestUtilities(unittest.TestCase):

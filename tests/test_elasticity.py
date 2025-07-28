@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from polycrystal.elasticity import single_crystal
+from polycrystal.elasticity.single_crystal import SingleCrystal
 
 
 TOL = 1e-14
@@ -10,6 +11,18 @@ TOL = 1e-14
 
 def maxdiff(a, b):
     return np.max(np.abs(a - b))
+
+@pytest.fixture
+def isotropic_eigen_basis():
+    """Return basis for isotropic tensors"""
+    return np.array([
+        [1, 1, 1, 0, 0, 0],
+        [1, -1, 0, 0, 0, 0],
+        [1, 0, -1, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0],
+        [0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 1, 0],
+    ])
 
 
 class TestSingleCrystal:
@@ -43,6 +56,15 @@ class TestSingleCrystal:
             'hexagonal', [1.0,  0.0,  0.0,  1.0,  0.5]
         )
         assert maxdiff(sx.stiffness, self.ID_6X6) < TOL
+
+    @pytest.mark.parametrize("K,G", [(2.3, 1.5), (3.2, 2.7)])
+    def test_isotropic(self, K, G, isotropic_eigen_basis):
+        """Test isotropic materials"""
+        mat = SingleCrystal.from_K_G(K, G)
+        sig = mat.stiffness @ isotropic_eigen_basis.T
+
+        assert np.allclose(sig.T[0], 3 * K * isotropic_eigen_basis[0])
+        assert np.allclose(sig.T[1:], 2 * G * isotropic_eigen_basis[1:])
 
 
 class TestThermalExpansion:

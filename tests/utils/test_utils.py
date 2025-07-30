@@ -2,6 +2,7 @@
 import numpy as np
 
 from polycrystal.utils import tensordata as td
+from polycrystal.utils tensor_data.elasticity import MandelForm
 from polycrystal.utils import unique_vectors as uv
 
 

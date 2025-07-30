@@ -66,8 +66,6 @@ class TestSingleCrystal:
         assert np.allclose(sig.T[0], 3 * K * isotropic_eigen_basis[0])
         assert np.allclose(sig.T[1:], 2 * G * isotropic_eigen_basis[1:])
 
-        # Now try the Mandel form
-
 
 class TestThermalExpansion:
 
@@ -107,14 +105,6 @@ class TestThermalExpansion:
 
 
 """
-class TestUtilities(unittest.TestCase):
-    def test_matrix_rep(self):
-        a6 = np.array([2.0, 3.1, 5.2, 7.3, 11.4, 13.5])
-        m3x3 = sx_elas.to_3x3(a6)
-        b6 = sx_elas.to_6vec(m3x3)
-        for i in range(len(a6)):
-            self.assertEqual(a6[i], b6[i])
-
     @unittest.skip("under development")
     def test_rotation(self):
         i3 = np.identity(3)

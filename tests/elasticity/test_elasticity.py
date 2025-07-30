@@ -5,7 +5,6 @@ import pytest
 from polycrystal.elasticity import single_crystal
 from polycrystal.elasticity.single_crystal import SingleCrystal
 
-
 TOL = 1e-14
 
 
@@ -21,7 +20,7 @@ def isotropic_eigen_basis():
         [1, 0, -1, 0, 0, 0],
         [0, 0, 0, 1, 0, 0],
         [0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 1],
     ])
 
 
@@ -62,9 +61,12 @@ class TestSingleCrystal:
         """Test isotropic materials"""
         mat = SingleCrystal.from_K_G(K, G)
         sig = mat.stiffness @ isotropic_eigen_basis.T
+        print("hi!\n", mat.stiffness)
 
         assert np.allclose(sig.T[0], 3 * K * isotropic_eigen_basis[0])
         assert np.allclose(sig.T[1:], 2 * G * isotropic_eigen_basis[1:])
+
+        # Now try the Mandel form
 
 
 class TestThermalExpansion:

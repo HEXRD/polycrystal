@@ -1,7 +1,13 @@
 """Elasticity tools for single crystals"""
+
+from enum import Enum
+
 import numpy as np
 
-from .moduli_tools import Isotropic
+from .moduli_tools import (
+    ComponentSystem, component_system_dict, SymmetryNames, symmetry_names_dict,
+    Isotropic, MatrixBuilder
+)
 
 
 SCALE_C44 = 2.0
@@ -13,13 +19,16 @@ class SingleCrystal:
     Parameters
     ----------
     sym: str
-       name of symmetry
+       name of symmetry; one of {"triclinic", "isotropic", "cubic", "hexagonal"}
     cij: list | tuple | array
        sequence of independent matrix values; the order is (c11, c12) for
        isotropic; (c11, c12, c44) for cubic; and (c11, c12, c13, c33, c44) for
-       hexagonal.
+       hexagonal; and all 21 (c11, c12, ...) constants for triclinic
     name: str, optional
        name to use for the material
+    system: str, default = "Mandel"
+       system to use for representation of symmetric matrices; choices are
+       {"Mandel", "Voigt"}
     cte: float | array(3, 3)
        coefficient of thermal expansion; a single value for isotropic materials
        or a 3 x 3 array in the crystal frame
@@ -45,12 +54,22 @@ class SingleCrystal:
         Read from a text file and return new instance.
     """
 
-    def __init__(self, symm, cij, name='<no name>', cte=None):
+    def __init__(self, symm, cij, name='<no name>', system= "Mandel", cte=None):
         self.symm = symm
         self.cij = np.array(cij).copy()
         self.name = name
 
-        self._stiffness = to_stiffness(symm, cij)
+        # Set system to use for symmetric matrices.
+        upsys = system.upper()
+        print("upsys: ", upsys, upsys in ComponentSystem)
+        if upsys not in component_system_dict:
+            msg = f"system '{system}' is not recognized; either 'Mandel' or 'Voigt'"
+            raise ValueError(msg)
+        self.system = component_system_dict[upsys]
+
+        # Calculate stiffness matrix.
+        mb = MatrixBuilder(self.symm)
+        self._stiffness = mb.cij_to_stiffness(self.cij, ComponentSystem.MANDEL)
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -74,7 +93,7 @@ class SingleCrystal:
         """
         iso = Isotropic.from_K_G(K, G)
         cij = [iso.c11, iso.c12]
-        return cls("isotropic", cij, **kwargs)
+        return cls(SymmetryNames.ISOTROPIC.value, cij, **kwargs)
 
     @classmethod
     def from_E_nu(cls, E, nu, **kwargs):
@@ -89,7 +108,7 @@ class SingleCrystal:
         """
         iso = Isotropic.from_E_nu(E, nu)
         cij = [iso.c11, iso.c12]
-        return cls("isotropic", cij, **kwargs)
+        return cls(SymmetryNames.ISOTROPIC.value, cij, **kwargs)
 
     @property
     def stiffness(self):
@@ -165,41 +184,6 @@ class SingleCrystal:
 
 # ======================================== Utilities
 
-
-def to_stiffness(sym, cij):
-    """build stiffness from minimal set of cij for each symmetry"""
-    if sym.startswith("iso"):
-        c11 = c22 = c33 = cij[0]
-        c12 = c13 = c23 = cij[1]
-        c44 = c55 = c66 = cij[0] - cij[1]
-
-    elif sym.startswith("cub"):
-        c11 = c22 = c33 = cij[0]
-        c12 = c13 = c23 = cij[1]
-        c44 = c55 = c66 = cij[2]*SCALE_C44
-
-    elif sym.startswith("hex"):
-        #
-        c11 = c22 = cij[0]
-        c12 = cij[1]
-        c13 = c23 = cij[2]
-        c33 = cij[3]
-        c44 = c55 = cij[4]*SCALE_C44
-        #
-        c66 = (c11 - c12)
-
-    return to_matrix(c11, c12, c13, c22, c23, c33, c44, c55, c66)
-
-
-def to_matrix(c11, c12, c13, c22, c23, c33, c44, c55, c66):
-    z = 0.0
-    return np.array(
-        [[c11, c12, c13, z, z, z],
-         [c12, c22, c23, z, z, z],
-         [c13, c23, c33, z, z, z],
-         [z, z, z,     c44, z, z],
-         [z, z, z,     z, c55, z],
-         [z, z, z,     z, z, c66]])
 
 
 def to_6vec(A):

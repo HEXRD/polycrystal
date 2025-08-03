@@ -3,11 +3,16 @@
 import numpy as np
 
 
-_s2i = 1/(_s2 := np.sqrt(2.))
+
 
 
 class BaseSystem:
     """Base system for representation of 3D rank 2 tensors"""
+
+    registry = dict()
+
+    _s2 = np.sqrt(2)
+    _s2i = 1 / _s2
 
     def __init__(self, matrices):
         """Initialize with matrices in standard dyadic basis
@@ -24,6 +29,12 @@ class BaseSystem:
         if matrices.shape[1] != 3 or matrices.shape[2] != 3:
             raise ValueError("`matrices` has incorrect shape")
         self._matrices = matrices
+
+    def __init_subclass__(cls, **kwargs):
+        """Subclass initialization"""
+        super().__init_subclass__(**kwargs)
+        if hasattr(cls, "_system_name"):
+            cls.registry[cls._system_name] = cls
 
     def __len__(self):
         return len(self.matrices)

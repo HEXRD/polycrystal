@@ -1,9 +1,8 @@
 """Base class for systems for representing 3D tensors"""
 
+from abc import ABC, abstractmethod
+
 import numpy as np
-
-
-
 
 
 class BaseSystem:
@@ -42,3 +41,56 @@ class BaseSystem:
     @property
     def matrices(self):
         return self._matrices
+
+    @property
+    def components(self):
+        """full components"""
+        if not hasattr(self, "_components"):
+            self.components = self.to_components(self.matrices)
+        return self._components
+
+    @components.setter
+    def components(self, c):
+        self._components = c
+
+    @abstractmethod
+    def to_components(cls, matrices):
+        """Set components from matrices"""
+        pass
+
+    @abstractmethod
+    def to_matrices(cls, components):
+        """Set matrices from components"""
+        pass
+
+    @staticmethod
+    def _check_part(part, dim):
+        """checks for expected input shape (2D) and length
+
+        Parameters
+        ----------
+        part: array
+           the component part to check
+        dim: int
+           the expected second dimension of the array
+
+        Returns
+        -------
+        int:
+           length of array
+
+        Raises
+        ------
+        ValueError
+           if not correct dimension or length in second dimension
+        """
+        if part is None:
+            return 0
+
+        comstr = "component string"
+        if part.ndim > 2:
+            raise ValueError("{comstr} must be 1- or 2-dimensional")
+        part = np.atleast_2d(part)
+        if part.shape[1] != dim:
+            raise ValueError(f"{comstr} must have second dimension equal to {dim}")
+        return part.shape[0]

@@ -24,11 +24,31 @@ class MandelSystem(BaseSystem):
         skew: array (n, 3)
           skew part
         """
-        len = cls._check_parts(symm, skew)
-        if symm is None:
-            symm = np.zeros((len, 6))
-        if skew is None:
-            skew = np.zeros((len, 3))
+        # First, check that everything has compatible shapes.
+        dim_sym, dim_skw = 6, 3
+
+        len_sym = cls._check_part(symm, dim_sym)
+        len_skw = cls._check_part(skew, dim_skw)
+
+        len = max(len_sym, len_skw)
+
+        if len_sym == 0:
+            symm = np.zeros((len, dim_sym))
+        else:
+            if len_sym != len:
+                msg = "symm and skew parts must have same length"
+                raise ValueError(msg)
+            # This handles the 1D array case.
+            symm = symm.reshape((len, dim_sym))
+
+        if len_skw == 0:
+            skew = np.zeros((len, dim_skw))
+        else:
+            if len_skw != len:
+                msg = "symm and skew parts must have same length"
+                raise ValueError(msg)
+            # This handles the 1D array case.
+            skew = skew.reshape((len, dim_skw))
 
         comps = np.hstack((symm, skew))
         mats = cls.to_matrices(comps)
@@ -36,35 +56,6 @@ class MandelSystem(BaseSystem):
         ten.components = comps
 
         return ten
-
-    @staticmethod
-    def _check_parts(symm, skew):
-        len = 0
-        if symm is not None:
-            if symm.ndim > 2:
-                raise ValueError("`symm` must be 1- or 2-dimensional")
-            symm = np.atleast_2d(symm)
-            if symm.shape[1] != 6:
-                raise ValueError("`symm` must have second dimension equal to 6")
-            len = symm.shape[0]
-
-        if skew is not None:
-            if skew.ndim > 2:
-                raise ValueError("`skew` must be 1- or 2-dimensional")
-            skew = np.atleast_2d(skew)
-            if skew.shape[1] != 3:
-                raise ValueError("`skew` must have second dimension equal to 3")
-            lskew = skew.shape[0]
-            if len == 0:
-                len = lskew
-            else:
-                if lskew != len:
-                    raise ValueError("`symm` and `skew` arrays have different lengths")
-
-        if len == 0:
-            raise ValueError("`symm` and `skew` cannot both be None")
-
-        return len
 
     @property
     def components(self):

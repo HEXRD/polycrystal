@@ -37,9 +37,9 @@ class SymmDevSystem(BaseSystem):
         if len == 0:
             raise ValueError("all parts are None")
 
-        emsg = "symm, skew and spherical parts all must have same length"
+        emsg = "symmdev, skew and spherical parts all must have same length"
         if len_sym == 0:
-            symm = np.zeros((len, dim_sym))
+            symmdev = np.zeros((len, dim_sym))
         else:
             if len_sym != len:
                 raise ValueError(emsg)
@@ -60,7 +60,6 @@ class SymmDevSystem(BaseSystem):
                 raise ValueError(emsg)
             sph = sph.reshape((len, 1))
 
-        print("shapes: ", sph.shape, symmdev.shape, skew.shape)
         comps = np.hstack((sph, symmdev, skew))
         mats = cls.to_matrices(comps)
         ten = BaseSystem(mats)

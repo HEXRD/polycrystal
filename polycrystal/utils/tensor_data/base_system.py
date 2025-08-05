@@ -12,6 +12,8 @@ class BaseSystem:
 
     _s2 = np.sqrt(2)
     _s2i = 1 / _s2
+    _s3 = np.sqrt(3)
+    _s3i = 1 / _s3
 
     def __init__(self, matrices):
         """Initialize with matrices in standard dyadic basis
@@ -64,15 +66,15 @@ class BaseSystem:
         pass
 
     @staticmethod
-    def _check_part(part, dim):
+    def _check_part(part, dim=None):
         """checks for expected input shape (2D) and length
 
         Parameters
         ----------
         part: array
            the component part to check
-        dim: int
-           the expected second dimension of the array
+        dim: int or None
+           the expected second dimension of the array, or `None` if the array is 1D
 
         Returns
         -------
@@ -87,6 +89,16 @@ class BaseSystem:
         if part is None:
             return 0
 
+        is_1d = dim is None
+
+        if is_1d:
+            if part.ndim > 1:
+                raise ValueError("expected 1D array for `part`")
+            else:
+                part = np.atleast_1d(part)
+                return len(part)
+
+        # Now, we have a 2D part.
         comstr = "component string"
         if part.ndim > 2:
             raise ValueError("{comstr} must be 1- or 2-dimensional")

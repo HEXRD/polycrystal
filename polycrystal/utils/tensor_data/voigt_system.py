@@ -31,6 +31,8 @@ class VoigtSystem(BaseSystem):
         len_skw = cls._check_part(skew, dim_skw)
 
         len = max(len_sym, len_skw)
+        if len == 0:
+            raise ValueError("all parts are None")
 
         if len_sym == 0:
             symm = np.zeros((len, dim_sym))

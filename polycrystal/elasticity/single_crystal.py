@@ -5,7 +5,7 @@ from enum import Enum
 import numpy as np
 
 from .moduli_tools import (
-    ComponentSystem, component_system_dict, SymmetryNames, symmetry_names_dict,
+    MatrixComponentSystem, component_system_dict, SymmetryNames, symmetry_names_dict,
     Isotropic, MatrixBuilder
 )
 
@@ -26,7 +26,10 @@ class SingleCrystal:
        hexagonal; and all 21 (c11, c12, ...) constants for triclinic
     name: str, optional
        name to use for the material
-    system: str, default = "Mandel"
+    input_system: str, default = "Voigt_Gamma"
+       system to use for representation of symmetric matrices; choices are
+       {"Mandel", "Voigt"}
+    output_system: str, default = "Mandel"
        system to use for representation of symmetric matrices; choices are
        {"Mandel", "Voigt"}
     cte: float | array(3, 3)
@@ -54,22 +57,24 @@ class SingleCrystal:
         Read from a text file and return new instance.
     """
 
-    def __init__(self, symm, cij, name='<no name>', system= "Mandel", cte=None):
+    def __init__(
+            self, symm, cij,
+            name='<no name>',
+            input_system= "Voigt_Gamma",
+            output_system= "Mandel",
+            cte=None
+    ):
         self.symm = symm
         self.cij = np.array(cij).copy()
         self.name = name
+        self.input_system = input_system
+        self.output_system = output_system
 
-        # Set system to use for symmetric matrices.
-        upsys = system.upper()
-        print("upsys: ", upsys, upsys in ComponentSystem)
-        if upsys not in component_system_dict:
-            msg = f"system '{system}' is not recognized; either 'Mandel' or 'Voigt'"
-            raise ValueError(msg)
-        self.system = component_system_dict[upsys]
+        return
 
         # Calculate stiffness matrix.
         mb = MatrixBuilder(self.symm)
-        self._stiffness = mb.cij_to_stiffness(self.cij, ComponentSystem.MANDEL)
+        self._stiffness = mb.cij_to_stiffness(self.cij, )
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -110,10 +115,53 @@ class SingleCrystal:
         cij = [iso.c11, iso.c12]
         return cls(SymmetryNames.ISOTROPIC.value, cij, **kwargs)
 
+    def _check_system(self, sys):
+        """check whether system is a value or an attribute in MatrixComponentSystem
+
+        In either case, return the attribute.
+        """
+        if sys in MatrixComponentSystem:
+            return sys
+
+        # Now check for a string matching an attribute up to case.
+        upsys = sys.upper()
+        if upsys not in component_system_dict.keys():
+            msg = (
+                f"system '{sys}' is not recognized.\n"
+                f"choices (ignore case) are: {list(component_system_dict.keys())}"
+            )
+            raise ValueError(msg)
+        return component_system_dict[upsys]
+
+    @property
+    def input_system(self):
+        """Input system for matrix components"""
+        return self._input_system
+
+    @input_system.setter
+    def input_system(self, v):
+        """Set method for input_system"""
+        self._input_system = self._check_system(v)
+
+    @property
+    def output_system(self):
+        """Output system for matrix components"""
+        return self._output_system
+
+    @output_system.setter
+    def output_system(self, v):
+        """Set method for output_system"""
+        self._output_system = self._check_system(v)
+
     @property
     def stiffness(self):
         """Stiffness matrix in crystal coordinates"""
         return self._stiffness
+
+    @stiffness.setter
+    def stiffness(self, value):
+        """Stiffness matrix in crystal coordinates"""
+        self._stiffness = value
 
     @property
     def compliance(self):

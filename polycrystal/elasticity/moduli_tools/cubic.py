@@ -69,6 +69,7 @@ class Cubic(BaseModuli):
     @property
     def K(self):
         """Bulk modulus"""
+        # This is independent of system.
         return (self.c11 + 2 * self.c12) / 3.
 
     @property
@@ -79,14 +80,14 @@ class Cubic(BaseModuli):
     @property
     def Gs(self):
         """Shear modulus involving off-diagonal elastic strains"""
-        return self.c44 # this depends on system
+        return self.c44 if self.system is self.SYSTEMS.VOIGT_GAMMA else 0.5 * self.c44
 
     @property
     def isotropic_G(self):
         """Average isotropic modulus for uniform orientation distribution"""
-        return 0.6 * self.Gs + 0.4 * Gd
+        return 0.6 * self.Gs + 0.4 * self.Gd
 
     @property
     def zener_A(self):
         """Zener's anisotropic ratio"""
-        return 2 * self.c44/(self.c11 - self.c12)
+        return self.Gs / self.Gd

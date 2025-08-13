@@ -13,6 +13,15 @@ class BaseModuli(ABC):
     SYSTEMS = MatrixComponentSystem
     DEFAULT_SYSTEM = MatrixComponentSystem.MANDEL
 
+    subclass_registry = {}
+
+
+    def __init_subclass__(cls, **kwargs):
+        # This adds each subclass to the registry with a key based on the
+        # lower cased subclass name.
+        super().__init_subclass__(**kwargs)
+        cls.subclass_registry[cls.__name__.lower()] = cls
+
     @abstractmethod
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""

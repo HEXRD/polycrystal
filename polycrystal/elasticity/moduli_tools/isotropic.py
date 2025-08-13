@@ -18,14 +18,13 @@ class Isotropic(BaseModuli):
        MatrixComponentSystem attribute
     """
 
-    def __init__(self, c11, c12, system=BaseModuli.SYSTEMS.MANDEL):
+    def __init__(self, c11, c12, system=BaseModuli.DEFAULT_SYSTEM):
         self.c11 = c11
         self.c12 = c12
-        self._system = system
-        self._stiffness = self.stiffness_from_moduli()
+        self.init_system(system)
 
     @classmethod
-    def from_K_G(cls, K, G):
+    def from_K_G(cls, K, G, system=BaseModuli.DEFAULT_SYSTEM):
         """Initialize from bulk and shear moduli
 
         Parameters
@@ -37,12 +36,11 @@ class Isotropic(BaseModuli):
         """
         c11 = (3*K + 4*G)/3.
         c12 = (3*K - 2*G)/3.
-        return cls(c11, c12)
+        return cls(c11, c12, system=system)
 
     @classmethod
-    def from_E_nu(cls, E, nu):
+    def from_E_nu(cls, E, nu, system=BaseModuli.DEFAULT_SYSTEM):
         """Initialize from Young's modulus and Poisson ratio
-
 
         Parameters
         ----------
@@ -53,7 +51,7 @@ class Isotropic(BaseModuli):
        """
         K = E/(1 - 2*nu)/3.
         G = E/(1 + nu)/2.
-        return cls.from_K_G(K, G)
+        return cls.from_K_G(K, G, system=system)
 
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""

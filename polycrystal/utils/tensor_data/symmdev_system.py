@@ -11,7 +11,7 @@ class SymmDevSystem(BaseSystem):
     _system_name = "SymmDev"
 
     @classmethod
-    def from_parts(cls, symmdev=None, skew=None, sph= None):
+    def from_parts(cls, symmdev=None, skew=None, sph=None):
         """Build matrices from parts additively
 
         This builds the matrix by specfiying the symmetric and skew parts

@@ -11,6 +11,7 @@ class BaseModuli(ABC):
 
     """Moduli Handlers"""
     SYSTEMS = MatrixComponentSystem
+    DEFAULT_SYSTEM = MatrixComponentSystem.MANDEL
 
     @abstractmethod
     def stiffness_from_moduli(self):
@@ -19,6 +20,16 @@ class BaseModuli(ABC):
     @abstractmethod
     def moduli_from_stiffness(self):
         """Independent moduli from stiffness matrix"""
+
+    def init_system(self, system):
+        """Initialize system
+
+        This also builds intializes the stiffness matrix from the moduli. After
+        initialization, changing `system` resets the moduli from the stiffness
+        matrix.
+        """
+        self._system = system
+        self._stiffness = self.stiffness_from_moduli()
 
     @property
     def system(self):

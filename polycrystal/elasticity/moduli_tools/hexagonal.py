@@ -17,14 +17,13 @@ class Hexagonal(BaseModuli):
        MatrixComponentSystem attribute
     """
 
-    def __init__(self, c11, c12, c13, c33, c44, system=BaseModuli.SYSTEMS.MANDEL):
+    def __init__(self, c11, c12, c13, c33, c44, system=BaseModuli.DEFAULT_SYSTEM):
         self.c11 = c11
         self.c12 = c12
         self.c13 = c13
         self.c33 = c33
         self.c44 = c44
-        self._system = system
-        self._stiffness = self.stiffness_from_moduli()
+        self.init_system(system)
 
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""
@@ -35,7 +34,6 @@ class Hexagonal(BaseModuli):
 
         c44 = c55 = self.c44
         cdiff_12 = (c11 - c12)
-
 
         if self.system is self.SYSTEMS.VOIGT_GAMMA:
             c66 = 0.5 * cdiff_12
@@ -51,3 +49,6 @@ class Hexagonal(BaseModuli):
         m = self.stiffness.matrix
         self.c11 = m[0, 0]
         self.c12 = m[0, 1]
+        self.c13 = m[0, 2]
+        self.c33 = m[2, 2]
+        self.c44 = m[3, 3]

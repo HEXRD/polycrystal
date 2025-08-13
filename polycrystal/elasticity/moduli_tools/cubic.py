@@ -1,4 +1,10 @@
-"""Isotropic moduli handler"""
+"""Cubic moduli handler
+
+TO DO
+-----
+
+* Update properties below.
+"""
 
 from .base_moduli import BaseModuli
 from .stiffness_matrix import StiffnessMatrix
@@ -6,25 +12,23 @@ from .stiffness_matrix import StiffnessMatrix
 import numpy as np
 
 
-class Cubic(object):
+class Cubic(BaseModuli):
     """Class for initializing cubic moduli
 
     Parameters
     ----------
     c11, c12, c44: float
        elastic modulus coefficients
-    system: MatrixComponentSystem, default = MatrixComponentSystem.VOIGT
-       enum values: MatrixComponentSystem.VOIGT or MatrixComponentSystem.MANDEL
+    system: Enum
+       MatrixComponentSystem
     """
-    def __init__(self, c11, c12, c44, system=MatrixComponentSystem.MANDEL):
+    def __init__(self, c11, c12, c44, system=BaseModuli.SYSTEMS.MANDEL):
         self.c11 = c11
         self.c12 = c12
         self.c44 = c44
-        self._system = system
-        self._stiffness = self.stiffness_from_moduli()
+        self.init_system(system)
 
-
-    @classmethod    def stiffness_from_moduli(self):
+    def stiffness_from_moduli(self):
         """Independent moduli to matrix"""
         c11 = c22 = c33 = self.c11
         c12 = c13 = c23 = self.c12
@@ -42,7 +46,8 @@ class Cubic(object):
         self.c44 = m[3, 3]
 
 
-    def from_K_Gd_Gs(cls, K, Gd, Gs, system=MatrixComponentSystem.MANDEL)):
+    @classmethod
+    def from_K_Gd_Gs(cls, K, Gd, Gs, system=BaseModuli.SYSTEMS.MANDEL):
         """Initialize from bulk and anisotropic shear moduli
 
         Parameters
@@ -54,9 +59,12 @@ class Cubic(object):
         """
         c11 = (3*K + 4*Gd)/3.
         c12 = (3*K - 2*Gd)/3.
-        c44 = Gs
+        if system is BaseModuli.SYSTEMS.VOIGT_GAMMA:
+            c44 = Gs
+        else:
+            c44 = 2.0 * Gs
 
-        return cls(c11, c12, c44)
+        return cls(c11, c12, c44, system)
 
     @property
     def K(self):

@@ -1,16 +1,8 @@
 """Elasticity tools for single crystals"""
 
-from enum import Enum
-
 import numpy as np
 
-from .moduli_tools import (
-    MatrixComponentSystem, component_system_dict, SymmetryNames, symmetry_names_dict,
-    Isotropic, MatrixBuilder
-)
-
-
-SCALE_C44 = 2.0
+from .moduli_tools import moduli_handler, component_system, Isotropic
 
 
 class SingleCrystal:
@@ -21,17 +13,18 @@ class SingleCrystal:
     sym: str
        name of symmetry; one of {"triclinic", "isotropic", "cubic", "hexagonal"}
     cij: list | tuple | array
-       sequence of independent matrix values; the order is (c11, c12) for
-       isotropic; (c11, c12, c44) for cubic; and (c11, c12, c13, c33, c44) for
-       hexagonal; and all 21 (c11, c12, ...) constants for triclinic
+       sequence of independent matrix values; by symmetry, they are:
+         "isotropic": (c11, c12)
+         "cubic": (c11, c12, c44)
+         "hexagonal": (c11, c12, c13, c33, c44)
+         "triclinic": (c11, c12, ...), 21 values upper triangle of matrix
     name: str, optional
        name to use for the material
-    input_system: str, default = "Voigt_Gamma"
+    input_system: str, default = "VOIGT_GAMMA"
        system to use for representation of symmetric matrices; choices are
-       {"Mandel", "Voigt"}
-    output_system: str, default = "Mandel"
-       system to use for representation of symmetric matrices; choices are
-       {"Mandel", "Voigt"}
+       {"MANDEL", "VOIGT_GAMMA", VOIGT_EPSILON"}
+    output_system: str, default = "MANDEL"
+       system to use for representation of stiffness matrix; same choices
     cte: float | array(3, 3)
        coefficient of thermal expansion; a single value for isotropic materials
        or a 3 x 3 array in the crystal frame
@@ -57,24 +50,33 @@ class SingleCrystal:
         Read from a text file and return new instance.
     """
 
+    _MSG_NOT_IMPLEMENTED = "This function is not currently implemented."
+
     def __init__(
             self, symm, cij,
             name='<no name>',
-            input_system= "Voigt_Gamma",
-            output_system= "Mandel",
+            input_system= "VOIGT_GAMMA",
+            output_system= "MANDEL",
             cte=None
     ):
         self.symm = symm
         self.cij = np.array(cij).copy()
         self.name = name
-        self.input_system = input_system
-        self.output_system = output_system
 
-        return
+        # This section sets up the moduli handler. The `input_system` is used only on
+        # instantiation and is read-only. The `output_system` is set after the
+        # handler is instantiated because the handler uses the `output_system` to
+        # get the right matrix output. The `output_system` set() method uses the
+        # handler.
 
-        # Calculate stiffness matrix.
-        mb = MatrixBuilder(self.symm)
-        self._stiffness = mb.cij_to_stiffness(self.cij, )
+        self._input_system = component_system(input_system)
+        ModuliHandler = moduli_handler(symm)
+        if symm == "triclinic":
+            self.moduli = ModuliHandler(self.cij, system=self.input_system)
+        else:
+            self.moduli = ModuliHandler(*self.cij, system=self.input_system)
+
+        self.output_system = component_system(output_system)
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -98,7 +100,7 @@ class SingleCrystal:
         """
         iso = Isotropic.from_K_G(K, G)
         cij = [iso.c11, iso.c12]
-        return cls(SymmetryNames.ISOTROPIC.value, cij, **kwargs)
+        return cls("isotropic", cij, **kwargs)
 
     @classmethod
     def from_E_nu(cls, E, nu, **kwargs):
@@ -111,37 +113,14 @@ class SingleCrystal:
         nu: float
            Poisson ratio
         """
-        iso = Isotropic.from_E_nu(E, nu)
+        iso = isotropic.Isotropic.from_E_nu(E, nu)
         cij = [iso.c11, iso.c12]
-        return cls(SymmetryNames.ISOTROPIC.value, cij, **kwargs)
-
-    def _check_system(self, sys):
-        """check whether system is a value or an attribute in MatrixComponentSystem
-
-        In either case, return the attribute.
-        """
-        if sys in MatrixComponentSystem:
-            return sys
-
-        # Now check for a string matching an attribute up to case.
-        upsys = sys.upper()
-        if upsys not in component_system_dict.keys():
-            msg = (
-                f"system '{sys}' is not recognized.\n"
-                f"choices (ignore case) are: {list(component_system_dict.keys())}"
-            )
-            raise ValueError(msg)
-        return component_system_dict[upsys]
+        return cls("isotropic", cij, **kwargs)
 
     @property
     def input_system(self):
         """Input system for matrix components"""
         return self._input_system
-
-    @input_system.setter
-    def input_system(self, v):
-        """Set method for input_system"""
-        self._input_system = self._check_system(v)
 
     @property
     def output_system(self):
@@ -151,17 +130,13 @@ class SingleCrystal:
     @output_system.setter
     def output_system(self, v):
         """Set method for output_system"""
-        self._output_system = self._check_system(v)
+        self._output_system = component_system(v)
+        self.moduli.system = self._output_system
 
     @property
     def stiffness(self):
         """Stiffness matrix in crystal coordinates"""
-        return self._stiffness
-
-    @stiffness.setter
-    def stiffness(self, value):
-        """Stiffness matrix in crystal coordinates"""
-        self._stiffness = value
+        return self.moduli.stiffness.matrix
 
     @property
     def compliance(self):
@@ -180,7 +155,7 @@ class SingleCrystal:
         matrix (6, 6)
            stiffness matrix in sample frame
         """
-        return rotate_matrix(self.stiffness, R)
+        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
 
     def sample_compliance(self, R):
         """Compliance matrix in sample coordinates
@@ -195,7 +170,8 @@ class SingleCrystal:
         matrix (6, 6)
            stiffness matrix in sample frame
         """
-        return rotate_matrix(self.compliance, R)
+        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
+
 
     def write(self, fname):
         """write to a text file
@@ -205,10 +181,7 @@ class SingleCrystal:
         fname: str | Path
            name of file to write to
         """
-        with open(fname, "w") as f:
-            f.write(self.name)
-            f.write(self.symm)
-            f.write(self.cij)
+        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
 
     @classmethod
     def read(cls, fname):
@@ -219,53 +192,4 @@ class SingleCrystal:
         fname: str | Path
            name of file to read
         """
-        with file(fname, "r") as f:
-            lines = f.readlines()
-
-        name = lines[0].strip()
-        symm = lines[1].strip()
-        cij = [float(fi) for fi in lines[2].split()]
-
-        esx = cls(symm, cij, name=name)
-
-        return esx
-
-# ======================================== Utilities
-
-
-
-def to_6vec(A):
-    """Return a six-vector representing matrix A"""
-    return np.array([A[0,0], A[1,1], A[2,2], A[1,2], A[0,2], A[0,1]])
-
-
-def to_3x3(a):
-    """Return 3x3 matrix for six-vector a"""
-    return np.array([[a[0], a[5], a[4]],
-                     [a[5], a[1], a[3]],
-                     [a[4], a[3], a[2]]])
-
-
-def rotation_operator(R):
-    """Return 6x6 matrix for applying a rotation to a 3x3 symmetric tensor
-
-    If Rc = s (taking crystal components to sample), then
-    L(M) = R*M*R^T, (taking crystal components, M, to sample components)
-    """
-    L = np.zeros((6,6))
-    id = np.identity(6)
-    for i in range(6):
-        a = id[i]
-        A = to_3x3(a)
-        LA = np.dot(np.dot(R, A), R.T)
-        L[:, i] = to_6vec(LA)
-
-    return L
-
-
-def rotate_matrix(matrix, R):
-    """return rotated matrix using rotation R, where Rc=s"""
-    LR = rotation_operator(R)
-    LRT = rotation_operator(R.T)
-
-    return np.dot(LR, np.dot(matrix, LRT))
+        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)

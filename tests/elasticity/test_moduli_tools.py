@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from polycrystal.elasticity.moduli_tools import Cubic, MatrixBuilder
+from polycrystal.elasticity.moduli_tools import Cubic
 
 
 def check_equal(c1, c2):

@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from polycrystal.elasticity.moduli_tools import Isotropic, Cubic
+from polycrystal.elasticity.moduli_tools import Isotropic, Cubic, Hexagonal
 
 
 SYSTEMS = Isotropic.SYSTEMS
@@ -104,3 +104,19 @@ class TestCubic:
             assert cub.Gs == Gs
         assert cub.isotropic_G == 0.6 * Gs + 0.4 * Gd
         assert cub.zener_A == Gs / Gd
+
+
+class TestHexagonal:
+
+    def test_identity(self, IDENTITY_6, IDENTITY_VG):
+        """Hexagonal moduli"""
+
+        c11, c12, c13, c33, c44 = 1.0, 0.0, 0.0, 1.0, 1.0
+        hex = Hexagonal(c11, c12, c13, c33, c44, SYSTEMS.MANDEL)
+        assert np.allclose(hex.stiffness.matrix, IDENTITY_6)
+        hex.system = SYSTEMS.VOIGT_EPSILON
+        assert np.allclose(hex.stiffness.matrix, IDENTITY_6)
+        hex.system = SYSTEMS.VOIGT_GAMMA
+        assert np.allclose(hex.stiffness.matrix, IDENTITY_VG)
+        hex.system = SYSTEMS.MANDEL
+        assert np.allclose(hex.stiffness.matrix, IDENTITY_6)

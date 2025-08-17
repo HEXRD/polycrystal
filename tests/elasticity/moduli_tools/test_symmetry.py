@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from polycrystal.elasticity.moduli_tools import Isotropic, Cubic, Hexagonal
+from polycrystal.elasticity.moduli_tools import Isotropic, Cubic, Hexagonal, Triclinic
 
 
 SYSTEMS = Isotropic.SYSTEMS
@@ -120,3 +120,25 @@ class TestHexagonal:
         assert np.allclose(hex.stiffness.matrix, IDENTITY_VG)
         hex.system = SYSTEMS.MANDEL
         assert np.allclose(hex.stiffness.matrix, IDENTITY_6)
+
+
+class TestTriclinic:
+    """Test triclinic (no) symmetry"""
+
+    def test_systems(self):
+        """Test that form changes correctly with systems"""
+        cij = np.arange(21)
+        tricl = Triclinic(cij, system=SYSTEMS.MANDEL)
+
+        # Check symmetry of stiffness matrix.
+        assert np.allclose(tricl.stiffness.matrix, tricl.stiffness.matrix.T)
+
+        # Now check number of entries that change.
+        tricl.system = SYSTEMS.VOIGT_EPSILON
+        assert np.count_nonzero(cij == tricl.cij) == 12
+
+        tricl.system = SYSTEMS.VOIGT_GAMMA
+        assert np.count_nonzero(cij == tricl.cij) == 6
+
+        tricl.system = SYSTEMS.MANDEL
+        assert np.allclose(cij, tricl.cij)

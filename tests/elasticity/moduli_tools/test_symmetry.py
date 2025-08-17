@@ -3,8 +3,7 @@
 import numpy as np
 import pytest
 
-from polycrystal.elasticity.moduli_tools import Isotropic
-from polycrystal.utils.tensor_data.mandel_system import MandelSystem
+from polycrystal.elasticity.moduli_tools import Isotropic, Cubic
 
 
 SYSTEMS = Isotropic.SYSTEMS
@@ -56,3 +55,52 @@ class TestIsotropic:
         ev_2G_v[0, :2] = -1
         stiff_v = iso.stiffness.matrix @ ev_2G_v
         assert np.allclose(stiff_v, 2 * ev_2G_v)
+
+
+class TestCubic:
+
+    def test_identity(self, IDENTITY_6, IDENTITY_VG):
+        """Test identiy in all systems"""
+        for sys in SYSTEMS:
+            cub = Cubic.from_K_Gd_Gs(1/3.0, 1/2.0, 1/2.0, system=sys)
+            if sys is SYSTEMS.VOIGT_GAMMA:
+                assert np.allclose(cub.stiffness.matrix, IDENTITY_VG)
+            else:
+                assert np.allclose(cub.stiffness.matrix, IDENTITY_6)
+
+    def test_eigenvalues(self):
+        """Cubic moduli"""
+
+        # This should give eigenvalues of 3.0, 2.0 and 4.0
+        K, Gd, Gs = 1.0, 1.0, 2.0
+        cub = Cubic.from_K_Gd_Gs(K, Gd, Gs, system=SYSTEMS.MANDEL)
+
+        # First test bulk eigenvector.
+        ev_3K_v = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 0.0])
+        stiff_v = cub.stiffness.matrix @ ev_3K_v.T
+        assert np.allclose(stiff_v.T, 3 * ev_3K_v)
+
+        # Next test Gd shear eigenvectors.
+        ev_2Gd_v = np.zeros((2, 6))
+        ev_2Gd_v[:, 0] = 1
+        ev_2Gd_v[0, 1] = -1
+        ev_2Gd_v[1, 2] = -1
+        stiff_v = cub.stiffness.matrix @ ev_2Gd_v.T
+        assert np.allclose(stiff_v, 2 * ev_2Gd_v.T)
+
+        # Next test Gs shear eigenvectors.
+        ev_2Gs_v = np.diagflat(np.ones(3), 3)[:3]
+        stiff_v = cub.stiffness.matrix @ ev_2Gs_v.T
+        assert np.allclose(stiff_v, 4 * ev_2Gs_v.T)
+
+    def test_properties(self):
+        """Test system-independent properties"""
+        K, Gd, Gs = 3.1, 5.2, 7.3
+        cub = Cubic.from_K_Gd_Gs(K, Gd, Gs, system=SYSTEMS.MANDEL)
+        for sys in SYSTEMS:
+            cub.system = sys
+            assert cub.K == K
+            assert cub.Gd == Gd
+            assert cub.Gs == Gs
+        assert cub.isotropic_G == 0.6 * Gs + 0.4 * Gd
+        assert cub.zener_A == Gs / Gd

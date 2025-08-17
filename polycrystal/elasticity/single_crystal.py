@@ -31,8 +31,20 @@ class SingleCrystal:
 
     Attributes
     ----------
-    cte:
+    cte: array(3, 3) or float
        coefficient of thermal expansion, if specified
+    input_system, output_system: Enum attribute
+       matrix component system
+    symm: BaseModuli
+       moduli handler for symmetry
+    cij: array(n)
+       array of indpendent moduli for the material cyrstal symmetry
+    nmae: str
+       name of material
+    stiffness: matrix(6, 6)
+       stiffness matrix for output_system`
+    compliance: matrix(6, 6)
+       compliance matrix for output_system`
 
     Methods
     -------
@@ -40,14 +52,6 @@ class SingleCrystal:
        Instantiate from bulk and shear moduli.
     from_E_nu:
        Instantiate from Young's modulus and Poisson ratio.
-    sample_stiffness:
-        Stiffness matrix in sample coordinates.
-    sample_compliance:
-        Compliance matrix in sample coordinates.
-    write:
-        Write to a text file.
-    read:
-        Read from a text file and return new instance.
     """
 
     _MSG_NOT_IMPLEMENTED = "This function is not currently implemented."
@@ -113,7 +117,7 @@ class SingleCrystal:
         nu: float
            Poisson ratio
         """
-        iso = isotropic.Isotropic.from_E_nu(E, nu)
+        iso = Isotropic.from_E_nu(E, nu)
         cij = [iso.c11, iso.c12]
         return cls("isotropic", cij, **kwargs)
 
@@ -142,54 +146,3 @@ class SingleCrystal:
     def compliance(self):
         """Compliance matrix in crystal coordinates"""
         return np.linalg.inv(self.stiffness)
-
-    def sample_stiffness(self, R):
-        """Stiffness matrix in sample coordinates
-
-        Parameters
-        ----------
-        R: orientation matrix taking crystal components to sample
-
-        Returns
-        -------
-        matrix (6, 6)
-           stiffness matrix in sample frame
-        """
-        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
-
-    def sample_compliance(self, R):
-        """Compliance matrix in sample coordinates
-
-
-        Parameters
-        ----------
-        R: orientation matrix taking crystal components to sample
-
-        Returns
-        -------
-        matrix (6, 6)
-           stiffness matrix in sample frame
-        """
-        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
-
-
-    def write(self, fname):
-        """write to a text file
-
-        Parameters
-        ----------
-        fname: str | Path
-           name of file to write to
-        """
-        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)
-
-    @classmethod
-    def read(cls, fname):
-        """Read from a text file and return new instance
-
-        Parameters
-        ----------
-        fname: str | Path
-           name of file to read
-        """
-        raise NotImplementedError(self._MSG_NOT_IMPLEMENTED)

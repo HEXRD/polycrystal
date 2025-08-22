@@ -35,10 +35,15 @@ def component_system(system_spec):
     system_spec: str or Enum
        name of system or attribute of `MatrixComponentSystem`
     """
-    cls = isotropic.Isotropic
-    if system_spec in cls.SYSTEMS:
-        return system_spec
-    d = {s.name: s for s in cls.SYSTEMS}
+    SYSTEMS = isotropic.Isotropic.SYSTEMS
+    if not isinstance(system_spec, str):
+        if system_spec in SYSTEMS:
+            return system_spec
+        else:
+            emsg = "component system enum attibute not found"
+            raise ValueError(emsg)
+
+    d = {s.name: s for s in SYSTEMS}
     if system_spec not in d:
         emsg = (
             f"component system name `{system_spec}` not found;"

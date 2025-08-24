@@ -56,8 +56,20 @@ class TestSingleCrystal:
         )
         assert maxdiff(sx.stiffness, ID_6X6) < TOL
 
-    def test_cij_out(self):
+    def test_cij_in_out(self):
         """Test cij for output system"""
+
+        # Isotropic.
+        sx = SingleCrystal(
+            'isotropic', [2.3, 4.9],
+            input_system = "VOIGT_GAMMA",
+            output_system = "MANDEL",
+        )
+        assert np.all(sx.cij_in == sx.cij)
+        assert np.allclose([2.3, 4.9], sx.cij_in)
+        assert np.allclose([2.3, 4.9], sx.cij_out)
+
+        # Cubic.
         sx = SingleCrystal(
             'cubic', [2.3, 4.5, 7.8],
             input_system = "VOIGT_GAMMA",
@@ -66,7 +78,30 @@ class TestSingleCrystal:
         assert np.allclose([2.3, 4.5, 7.8], sx.cij_in)
         assert np.allclose([2.3, 4.5, 2 * 7.8], sx.cij_out)
 
+        # Hexagonal
+        test_cij_eps = [1.0,  2.3, 3.4, 5.6, 6.6]
+        test_cij_gam = [1.0,  2.3, 3.4, 5.6, 3.3]
+        sx = SingleCrystal(
+            'hexagonal', test_cij_eps,
+            input_system = "VOIGT_EPSILON",
+            output_system = "VOIGT_GAMMA",
+        )
+        assert np.all(sx.cij_in == sx.cij)
+        assert np.allclose(test_cij_gam, sx.cij_out)
 
+        # Triclinic
+        test_cij = np.arange(21)
+        sx = SingleCrystal(
+            'triclinic', test_cij,
+            input_system="MANDEL",
+            output_system = "VOIGT_GAMMA"
+        )
+        top_left = np.array((0, 1, 2, 6, 7, 11))
+        assert np.allclose(sx.cij_out[top_left], test_cij[top_left])
+        top_right = np.array((3, 4, 5, 8, 9, 10, 12, 13, 14,))
+        assert np.allclose(sx.cij_out[top_right], 1/np.sqrt(2) * test_cij[top_right])
+        # Bottom Left.
+        assert np.allclose(sx.cij_out[15:], 0.5 * test_cij[15:])
 
 
 class TestThermalExpansion:

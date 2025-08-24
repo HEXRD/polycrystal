@@ -3,7 +3,7 @@ from collections import namedtuple
 
 import numpy as np
 
-from ..utils.tensordata import TensorData
+from ..utils.tensor_data.symmdev_system import SymmDevSystem
 
 
 _flds = [
@@ -30,13 +30,13 @@ class SlipCrystal:
         self.groups = groups
         self.model = model
 
-        self._schmid_td = TensorData(
+        self._schmid_td = SymmDevSystem(
             np.hstack([g.schmid for g in self.groups])
         )
 
     @property
     def schmid(self):
-        """Return Schmid tensor matrices"""
+        """Return Schmid Tensor matrices"""
         return self._schmid_td.matrices
 
     @property
@@ -67,7 +67,7 @@ class SlipCrystal:
         array (npts, nslip)
            array of resolved shear stresses for each slip system
         """
-        return TensorData(cstress).symmdev @ self.schmid_5.T
+        return SymmDevSystem(cstress).symmdev @ self.schmid_5.T
 
     def velocity_gradient(self, gdots):
         """Plastic velocity gradient from gamma dots

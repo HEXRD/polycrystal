@@ -16,21 +16,29 @@ class SlipGroup:
        slip directiion
     csym:
        crystal symmetry group
-    params:
+
+    Attributes
+    ----------
+    schmid: array(n, 3, 3)
+       array of symmetrically equivalent Schmid tensors
     """
 
     def __init__(self, n, d, csym):
         self.n = n
         self.d = d
         self.csym = csym
-        self._generate_ss()
+        self._schmid = self._generate_ss()
 
     def __len__(self):
-        return len(self.schmid)
+        return len(self._schmid)
+
+    @property
+    def schmid(self):
+        """Array of symmetrically equivalent Schmid tensors"""
+        return self._schmid
 
     def _generate_ss(self):
         """Generate array of unique Schmid Tensors"""
-        # import pdb; pdb.set_trace()
         nsym = self.csym.nsymm
         rmats = self.csym.rmats
         n = rmats @ self.n
@@ -38,8 +46,8 @@ class SlipGroup:
         ss = np.einsum("ij,ik->ijk", d, n)
         ssu = self._unique_ss(ss)
         ssu_nrm = np.sqrt((ssu * ssu).sum((1, 2)))
-        self.schmid = ssu/ssu_nrm.reshape(nss := len(ssu), 1, 1)
-        self.schmid = self.schmid.reshape(nss, 3, 3)
+        schmid = ssu/ssu_nrm.reshape(nss := len(ssu), 1, 1)
+        return schmid.reshape(nss, 3, 3)
 
     def _unique_ss(self, ss):
         """Find slip systems unique up to a sign"""

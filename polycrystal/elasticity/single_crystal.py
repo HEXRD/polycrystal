@@ -1,10 +1,8 @@
 """Elasticity tools for single crystals"""
+
 import numpy as np
 
-from .moduli_tools import Isotropic
-
-
-SCALE_C44 = 2.0
+from .moduli_tools import moduli_handler, component_system, Isotropic
 
 
 class SingleCrystal:
@@ -13,21 +11,40 @@ class SingleCrystal:
     Parameters
     ----------
     sym: str
-       name of symmetry
+       name of symmetry; one of {"triclinic", "isotropic", "cubic", "hexagonal"}
     cij: list | tuple | array
-       sequence of independent matrix values; the order is (c11, c12) for
-       isotropic; (c11, c12, c44) for cubic; and (c11, c12, c13, c33, c44) for
-       hexagonal.
+       sequence of independent matrix values; by symmetry, they are:
+         "isotropic": (c11, c12)
+         "cubic": (c11, c12, c44)
+         "hexagonal": (c11, c12, c13, c33, c44)
+         "triclinic": (c11, c12, ...), 21 values upper triangle of matrix
     name: str, optional
        name to use for the material
+    input_system: str, default = "VOIGT_GAMMA"
+       system to use for representation of symmetric matrices; choices are
+       {"MANDEL", "VOIGT_GAMMA", VOIGT_EPSILON"}
+    output_system: str, default = "MANDEL"
+       system to use for representation of stiffness matrix; same choices
     cte: float | array(3, 3)
        coefficient of thermal expansion; a single value for isotropic materials
        or a 3 x 3 array in the crystal frame
 
     Attributes
     ----------
-    cte:
+    cte: array(3, 3) or float
        coefficient of thermal expansion, if specified
+    input_system, output_system: Enum attribute
+       matrix component system
+    symm: BaseModuli
+       moduli handler for symmetry
+    cij: array(n)
+       array of indpendent moduli for the material cyrstal symmetry
+    nmae: str
+       name of material
+    stiffness: matrix(6, 6)
+       stiffness matrix for output_system`
+    compliance: matrix(6, 6)
+       compliance matrix for output_system`
 
     Methods
     -------
@@ -35,22 +52,35 @@ class SingleCrystal:
        Instantiate from bulk and shear moduli.
     from_E_nu:
        Instantiate from Young's modulus and Poisson ratio.
-    sample_stiffness:
-        Stiffness matrix in sample coordinates.
-    sample_compliance:
-        Compliance matrix in sample coordinates.
-    write:
-        Write to a text file.
-    read:
-        Read from a text file and return new instance.
     """
 
-    def __init__(self, symm, cij, name='<no name>', cte=None):
+    _MSG_NOT_IMPLEMENTED = "This function is not currently implemented."
+
+    def __init__(
+            self, symm, cij,
+            name='<no name>',
+            input_system= "VOIGT_GAMMA",
+            output_system= "MANDEL",
+            cte=None
+    ):
         self.symm = symm
-        self.cij = np.array(cij).copy()
+        self._cij = np.array(cij).copy()
         self.name = name
 
-        self._stiffness = to_stiffness(symm, cij)
+        # This section sets up the moduli handler. The `input_system` is used only on
+        # instantiation and is read-only. The `output_system` is set after the
+        # handler is instantiated because the handler uses the `output_system` to
+        # get the right matrix output. The `output_system` set() method uses the
+        # handler.
+
+        self._input_system = component_system(input_system)
+        ModuliHandler = moduli_handler(symm)
+        if symm == "triclinic":
+            self.moduli = ModuliHandler(self.cij, system=self.input_system)
+        else:
+            self.moduli = ModuliHandler(*self.cij, system=self.input_system)
+
+        self.output_system = component_system(output_system)
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -92,148 +122,42 @@ class SingleCrystal:
         return cls("isotropic", cij, **kwargs)
 
     @property
+    def input_system(self):
+        """Input system for matrix components"""
+        return self._input_system
+
+    @property
+    def output_system(self):
+        """Output system for matrix components"""
+        return self._output_system
+
+    @output_system.setter
+    def output_system(self, v):
+        """Set method for output_system"""
+        self._output_system = component_system(v)
+        self.moduli.system = self._output_system
+
+    @property
+    def cij(self):
+        """Return moduli for the input system"""
+        return self._cij
+
+    @property
+    def cij_in(self):
+        """Return moduli for the input system"""
+        return self.cij
+
+    @property
+    def cij_out(self):
+        """Return moduli for the output system"""
+        return self.moduli.cij
+
+    @property
     def stiffness(self):
         """Stiffness matrix in crystal coordinates"""
-        return self._stiffness
+        return self.moduli.stiffness.matrix
 
     @property
     def compliance(self):
         """Compliance matrix in crystal coordinates"""
         return np.linalg.inv(self.stiffness)
-
-    def sample_stiffness(self, R):
-        """Stiffness matrix in sample coordinates
-
-        Parameters
-        ----------
-        R: orientation matrix taking crystal components to sample
-
-        Returns
-        -------
-        matrix (6, 6)
-           stiffness matrix in sample frame
-        """
-        return rotate_matrix(self.stiffness, R)
-
-    def sample_compliance(self, R):
-        """Compliance matrix in sample coordinates
-
-
-        Parameters
-        ----------
-        R: orientation matrix taking crystal components to sample
-
-        Returns
-        -------
-        matrix (6, 6)
-           stiffness matrix in sample frame
-        """
-        return rotate_matrix(self.compliance, R)
-
-    def write(self, fname):
-        """write to a text file
-
-        Parameters
-        ----------
-        fname: str | Path
-           name of file to write to
-        """
-        with open(fname, "w") as f:
-            f.write(self.name)
-            f.write(self.symm)
-            f.write(self.cij)
-
-    @classmethod
-    def read(cls, fname):
-        """Read from a text file and return new instance
-
-        Parameters
-        ----------
-        fname: str | Path
-           name of file to read
-        """
-        with file(fname, "r") as f:
-            lines = f.readlines()
-
-        name = lines[0].strip()
-        symm = lines[1].strip()
-        cij = [float(fi) for fi in lines[2].split()]
-
-        esx = cls(symm, cij, name=name)
-
-        return esx
-
-# ======================================== Utilities
-
-
-def to_stiffness(sym, cij):
-    """build stiffness from minimal set of cij for each symmetry"""
-    if sym.startswith("iso"):
-        c11 = c22 = c33 = cij[0]
-        c12 = c13 = c23 = cij[1]
-        c44 = c55 = c66 = cij[0] - cij[1]
-
-    elif sym.startswith("cub"):
-        c11 = c22 = c33 = cij[0]
-        c12 = c13 = c23 = cij[1]
-        c44 = c55 = c66 = cij[2]*SCALE_C44
-
-    elif sym.startswith("hex"):
-        #
-        c11 = c22 = cij[0]
-        c12 = cij[1]
-        c13 = c23 = cij[2]
-        c33 = cij[3]
-        c44 = c55 = cij[4]*SCALE_C44
-        #
-        c66 = (c11 - c12)
-
-    return to_matrix(c11, c12, c13, c22, c23, c33, c44, c55, c66)
-
-
-def to_matrix(c11, c12, c13, c22, c23, c33, c44, c55, c66):
-    z = 0.0
-    return np.array(
-        [[c11, c12, c13, z, z, z],
-         [c12, c22, c23, z, z, z],
-         [c13, c23, c33, z, z, z],
-         [z, z, z,     c44, z, z],
-         [z, z, z,     z, c55, z],
-         [z, z, z,     z, z, c66]])
-
-
-def to_6vec(A):
-    """Return a six-vector representing matrix A"""
-    return np.array([A[0,0], A[1,1], A[2,2], A[1,2], A[0,2], A[0,1]])
-
-
-def to_3x3(a):
-    """Return 3x3 matrix for six-vector a"""
-    return np.array([[a[0], a[5], a[4]],
-                     [a[5], a[1], a[3]],
-                     [a[4], a[3], a[2]]])
-
-
-def rotation_operator(R):
-    """Return 6x6 matrix for applying a rotation to a 3x3 symmetric tensor
-
-    If Rc = s (taking crystal components to sample), then
-    L(M) = R*M*R^T, (taking crystal components, M, to sample components)
-    """
-    L = np.zeros((6,6))
-    id = np.identity(6)
-    for i in range(6):
-        a = id[i]
-        A = to_3x3(a)
-        LA = np.dot(np.dot(R, A), R.T)
-        L[:, i] = to_6vec(LA)
-
-    return L
-
-
-def rotate_matrix(matrix, R):
-    """return rotated matrix using rotation R, where Rc=s"""
-    LR = rotation_operator(R)
-    LRT = rotation_operator(R.T)
-
-    return np.dot(LR, np.dot(matrix, LRT))

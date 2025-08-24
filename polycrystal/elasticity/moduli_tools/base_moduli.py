@@ -30,6 +30,11 @@ class BaseModuli(ABC):
     def moduli_from_stiffness(self):
         """Independent moduli from stiffness matrix"""
 
+    @property
+    @abstractmethod
+    def cij(self):
+        """Array of independent moduli"""
+
     def init_system(self, system):
         """Initialize system
 

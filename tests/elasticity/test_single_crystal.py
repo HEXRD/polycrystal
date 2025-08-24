@@ -56,6 +56,18 @@ class TestSingleCrystal:
         )
         assert maxdiff(sx.stiffness, ID_6X6) < TOL
 
+    def test_cij_out(self):
+        """Test cij for output system"""
+        sx = SingleCrystal(
+            'cubic', [2.3, 4.5, 7.8],
+            input_system = "VOIGT_GAMMA",
+            output_system = "VOIGT_EPSILON",
+        )
+        assert np.allclose([2.3, 4.5, 7.8], sx.cij_in)
+        assert np.allclose([2.3, 4.5, 2 * 7.8], sx.cij_out)
+
+
+
 
 class TestThermalExpansion:
 

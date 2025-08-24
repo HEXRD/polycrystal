@@ -18,8 +18,12 @@ class Triclinic(BaseModuli):
     """
 
     def __init__(self, cij, system=BaseModuli.SYSTEMS.MANDEL):
-        self.cij = cij
+        self._cij = cij
         self.init_system(system)
+
+    @property
+    def cij(self):
+        return self._cij
 
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""
@@ -28,4 +32,4 @@ class Triclinic(BaseModuli):
     def moduli_from_stiffness(self):
         """Independent moduli to matrix"""
         m = self.stiffness.matrix
-        self.cij = m[np.triu_indices(6)]
+        self._cij = m[np.triu_indices(6)]

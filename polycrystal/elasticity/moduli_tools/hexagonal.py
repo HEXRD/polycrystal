@@ -25,6 +25,10 @@ class Hexagonal(BaseModuli):
         self.c44 = c44
         self.init_system(system)
 
+    @property
+    def cij(self):
+        return (self.c11, self.c12, self.c13, self.c33, self.c44)
+
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""
         c11 = c22 = self.c11

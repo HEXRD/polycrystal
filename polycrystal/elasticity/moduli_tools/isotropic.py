@@ -53,6 +53,10 @@ class Isotropic(BaseModuli):
         G = E/(1 + nu)/2.
         return cls.from_K_G(K, G, system=system)
 
+    @property
+    def cij(self):
+        return (self.c11, self.c12)
+
     def stiffness_from_moduli(self):
         """Independent moduli to matrix"""
         c11 = c22 = c33 = self.c11

@@ -64,7 +64,7 @@ class SingleCrystal:
             cte=None
     ):
         self.symm = symm
-        self.cij = np.array(cij).copy()
+        self._cij = np.array(cij).copy()
         self.name = name
 
         # This section sets up the moduli handler. The `input_system` is used only on
@@ -136,6 +136,21 @@ class SingleCrystal:
         """Set method for output_system"""
         self._output_system = component_system(v)
         self.moduli.system = self._output_system
+
+    @property
+    def cij(self):
+        """Return moduli for the input system"""
+        return self._cij
+
+    @property
+    def cij_in(self):
+        """Return moduli for the input system"""
+        return self.cij
+
+    @property
+    def cij_out(self):
+        """Return moduli for the output system"""
+        return self.moduli.cij
 
     @property
     def stiffness(self):

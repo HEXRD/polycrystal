@@ -54,7 +54,7 @@ class VoigtSystem(BaseSystem):
 
         comps = np.hstack((symm, skew))
         mats = cls.to_matrices(comps)
-        ten = BaseSystem(mats)
+        ten = cls(mats)
         ten.components = comps
 
         return ten

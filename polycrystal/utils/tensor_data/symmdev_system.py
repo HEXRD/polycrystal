@@ -62,7 +62,7 @@ class SymmDevSystem(BaseSystem):
 
         comps = np.hstack((sph, symmdev, skew))
         mats = cls.to_matrices(comps)
-        ten = BaseSystem(mats)
+        ten = cls(mats)
         ten.components = comps
 
         return ten

@@ -5,6 +5,8 @@ from enum import Enum, auto
 
 import numpy as np
 
+import pint
+
 
 _UT_INDICES = np.triu_indices(6)
 _LT_INDICES = np.tril_indices(6, k=-1)
@@ -66,23 +68,33 @@ class StiffnessMatrix:
        upper triangle of the 6x6 stiffness matrix
     system: Enum
        item in MatrixComponentSystem class
+    units: str
+       units of stress
     """
 
-    def __init__(self, cij, system):
+    ureg = pint.UnitRegistry()
+
+    def __init__(self, cij, system, units):
         if len(cij) != 21:
             raise ValueError("cij must have length 21")
-        self.cij = cij
+        self._units = self.ureg.parse_expression(units)
 
         if system not in MatrixComponentSystem:
             raise ValueError("`system` must be an attribtue of MatrixComponentSystem")
         self._system = system
 
-        self._matrix = self._fill_cij(cij)
+        self._matrix = self._fill_cij(cij * self.units)
 
     @staticmethod
     def _fill_cij(cij):
-        mat = np.empty((6, 6))
-        mat[_UT_INDICES] = cij
+        # Here, using the _UT_INDICES directly creates a problem with the pint units.
+        # They do not get carried through.
+
+        mat = np.zeros((6, 6)) * cij.u
+        ia, ja = _UT_INDICES
+        for k in range(len(ia)):
+            i, j = ia[k], ja[k]
+            mat[i, j] = cij[k]
         mat[_LT_INDICES] = cij[_LT_CIJ]
         return mat
 
@@ -104,6 +116,16 @@ class StiffnessMatrix:
         if scale is not None:
             self._rescale_matrix(scale)
             self._system = v
+
+    @property
+    def units(self):
+        return self._units
+
+    @units.setter
+    def units(self, v):
+        uv = self.ureg.parse_expression(v)
+        self._matrix.ito(uv)
+        self._units = uv
 
     def _rescale_matrix(self, scale):
         self._matrix[:3, 3:] *= scale.up_right

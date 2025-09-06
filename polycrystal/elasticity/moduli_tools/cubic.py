@@ -6,7 +6,7 @@ TO DO
 * Update properties below.
 """
 
-from .base_moduli import BaseModuli
+from .base_moduli import BaseModuli, DEFAULT_UNITS
 from .stiffness_matrix import StiffnessMatrix
 
 import numpy as np
@@ -22,7 +22,10 @@ class Cubic(BaseModuli):
     system: Enum
        MatrixComponentSystem
     """
-    def __init__(self, c11, c12, c44, system=BaseModuli.SYSTEMS.MANDEL):
+    def __init__(self, c11, c12, c44,
+                 system=BaseModuli.SYSTEMS.MANDEL,
+                 units=DEFAULT_UNITS
+                 ):
         self.c11 = c11
         self.c12 = c12
         self.c44 = c44

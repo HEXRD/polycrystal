@@ -38,7 +38,10 @@ class TestStiffness:
     def all_ones_vg(cls):
         all_1 = np.ones((6, 6))
         cij_upper = all_1[ np.triu_indices(6)]
-        return stiffness_matrix.StiffnessMatrix(cij_upper, SYSTEMS.VOIGT_GAMMA)
+        units = "MPa"
+        return stiffness_matrix.StiffnessMatrix(
+            cij_upper, SYSTEMS.VOIGT_GAMMA, units
+        )
 
     def test_ones(self, all_ones_vg):
         """Use matrix of all ones to test scaling factors of each system"""
@@ -63,3 +66,15 @@ class TestStiffness:
         assert check_block(all_1, all_ones_vg.matrix, 1)
         assert check_block(all_1, all_ones_vg.matrix, 2)
         assert check_block(all_1, all_ones_vg.matrix, 3)
+
+    def test_units(self, all_ones_vg):
+
+        mat_gpa = all_ones_vg.matrix
+        all_ones_vg.units = "MPa"
+        np.allclose(all_ones_vg.matrix, 1000 * mat_gpa)
+
+        # Now, change system too.
+        all_ones_vg.system = SYSTEMS.VOIGT_EPSILON
+        mat_ve_gpa = all_ones_vg.matrix
+        all_ones_vg.units = "MPa"
+        np.allclose(all_ones_vg.matrix, 1e-3 * mat_ve_gpa)

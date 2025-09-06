@@ -25,6 +25,10 @@ class SingleCrystal:
        {"MANDEL", "VOIGT_GAMMA", VOIGT_EPSILON"}
     output_system: str, default = "MANDEL"
        system to use for representation of stiffness matrix; same choices
+    input_units: str, default = "GPa"
+       units of input moduli
+    output_units: str, default="GPa"
+       units of output stiffness
     cte: float | array(3, 3)
        coefficient of thermal expansion; a single value for isotropic materials
        or a 3 x 3 array in the crystal frame
@@ -61,14 +65,16 @@ class SingleCrystal:
             name='<no name>',
             input_system= "VOIGT_GAMMA",
             output_system= "MANDEL",
+            input_units= "GPa",
+            output_units= "GPa",
             cte=None
     ):
         self.symm = symm
         self._cij = np.array(cij).copy()
         self.name = name
 
-        # This section sets up the moduli handler. The `input_system` is used only on
-        # instantiation and is read-only. The `output_system` is set after the
+        # This section sets up the moduli handler. The `input_system` is used only
+        # on instantiation and is read-only. The `output_system` is set after the
         # handler is instantiated because the handler uses the `output_system` to
         # get the right matrix output. The `output_system` set() method uses the
         # handler.
@@ -81,6 +87,10 @@ class SingleCrystal:
             self.moduli = ModuliHandler(*self.cij, system=self.input_system)
 
         self.output_system = component_system(output_system)
+
+        # Now for the units.
+        self._input_units = input_units
+        self._output_units = output_units
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -136,6 +146,21 @@ class SingleCrystal:
         """Set method for output_system"""
         self._output_system = component_system(v)
         self.moduli.system = self._output_system
+
+    @property
+    def input_units(self):
+        return self._input_units
+
+    @property
+    def output_units(self):
+        """Output units for moduli"""
+        return self._output_units
+
+    @output_units.setter
+    def output_units(self, v):
+        """Set method for output_units"""
+        self._output_units = v
+        # reset moduli/stiffness quantities
 
     @property
     def cij(self):

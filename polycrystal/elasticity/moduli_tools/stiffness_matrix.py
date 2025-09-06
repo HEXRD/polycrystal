@@ -8,6 +8,8 @@ import numpy as np
 import pint
 
 
+DEFAULT_UNITS = "GPa"
+
 _UT_INDICES = np.triu_indices(6)
 _LT_INDICES = np.tril_indices(6, k=-1)
 _LT_CIJ = [1, 2, 7, 3, 8, 12, 4, 9, 13, 16, 5, 10, 14, 17, 19]
@@ -74,33 +76,27 @@ class StiffnessMatrix:
 
     ureg = pint.UnitRegistry()
 
-    def __init__(self, cij, system, units):
+    def __init__(self, cij, system, units=DEFAULT_UNITS):
         if len(cij) != 21:
             raise ValueError("cij must have length 21")
-        self._units = self.ureg.parse_expression(units)
 
         if system not in MatrixComponentSystem:
             raise ValueError("`system` must be an attribtue of MatrixComponentSystem")
         self._system = system
 
-        self._matrix = self._fill_cij(cij * self.units)
+        self._units = self.ureg.parse_expression(units)
+        self._matrix = self._fill_cij(cij) * self.units
 
     @staticmethod
     def _fill_cij(cij):
-        # Here, using the _UT_INDICES directly creates a problem with the pint units.
-        # They do not get carried through.
-
-        mat = np.zeros((6, 6)) * cij.u
-        ia, ja = _UT_INDICES
-        for k in range(len(ia)):
-            i, j = ia[k], ja[k]
-            mat[i, j] = cij[k]
+        mat = np.zeros((6, 6))
+        mat[_UT_INDICES] = cij
         mat[_LT_INDICES] = cij[_LT_CIJ]
         return mat
 
     @property
     def matrix(self):
-        return self._matrix
+        return self._matrix.to_tuple()[0]
 
     @property
     def system(self):

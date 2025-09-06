@@ -2,15 +2,7 @@
 
 import numpy as np
 
-from polycrystal.utils import tensordata as td
 from polycrystal.utils import unique_vectors as uv
-
-
-# Testing tensordata
-TOL = 1e-14
-n = 6
-mats = np.random.random((n, 3, 3))
-tdata = td.TensorData(matrices=mats)
 
 
 def test_unique_vectors():

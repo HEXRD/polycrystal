@@ -3,6 +3,7 @@
 import numpy as np
 
 from .moduli_tools import moduli_handler, component_system, Isotropic
+from .moduli_tools.stiffness_matrix import DEFAULT_UNITS
 
 
 class SingleCrystal:
@@ -25,9 +26,9 @@ class SingleCrystal:
        {"MANDEL", "VOIGT_GAMMA", VOIGT_EPSILON"}
     output_system: str, default = "MANDEL"
        system to use for representation of stiffness matrix; same choices
-    input_units: str, default = "GPa"
+    input_units: str, default = DEFAULT_UNITS
        units of input moduli
-    output_units: str, default="GPa"
+    output_units: str, default=DEFAULT_UNITS
        units of output stiffness
     cte: float | array(3, 3)
        coefficient of thermal expansion; a single value for isotropic materials
@@ -63,10 +64,10 @@ class SingleCrystal:
     def __init__(
             self, symm, cij,
             name='<no name>',
-            input_system= "VOIGT_GAMMA",
-            output_system= "MANDEL",
-            input_units= "GPa",
-            output_units= "GPa",
+            input_system="VOIGT_GAMMA",
+            output_system="MANDEL",
+            input_units=DEFAULT_UNITS,
+            output_units=DEFAULT_UNITS,
             cte=None
     ):
         self.symm = symm
@@ -77,20 +78,25 @@ class SingleCrystal:
         # on instantiation and is read-only. The `output_system` is set after the
         # handler is instantiated because the handler uses the `output_system` to
         # get the right matrix output. The `output_system` set() method uses the
-        # handler.
+        # handler. The `units` are initialized with the `input_units` and then
+        # reset to the `output_units`.
 
         self._input_system = component_system(input_system)
         ModuliHandler = moduli_handler(symm)
         if symm == "triclinic":
-            self.moduli = ModuliHandler(self.cij, system=self.input_system)
+            self.moduli = ModuliHandler(
+                self.cij, system=self.input_system, units=input_units
+            )
         else:
-            self.moduli = ModuliHandler(*self.cij, system=self.input_system)
+            self.moduli = ModuliHandler(
+                *self.cij, system=self.input_system, units=input_units
+            )
+        self.moduli.units = output_units
 
         self.output_system = component_system(output_system)
 
         # Now for the units.
         self._input_units = input_units
-        self._output_units = output_units
 
         # Set CTE (coefficient of thermal expansion)
         if cte is not None:
@@ -154,13 +160,12 @@ class SingleCrystal:
     @property
     def output_units(self):
         """Output units for moduli"""
-        return self._output_units
+        return self.moduli.units
 
     @output_units.setter
     def output_units(self, v):
         """Set method for output_units"""
-        self._output_units = v
-        # reset moduli/stiffness quantities
+        self.moduli.units = v
 
     @property
     def cij(self):

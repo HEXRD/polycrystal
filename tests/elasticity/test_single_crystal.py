@@ -103,6 +103,19 @@ class TestSingleCrystal:
         # Bottom Left.
         assert np.allclose(sx.cij_out[15:], 0.5 * test_cij[15:])
 
+    def test_units(self):
+
+        sx = SingleCrystal(
+            'isotropic', [1.0, 0.0],
+            input_units= "GPa",
+        )
+        assert sx.stiffness[0, 0] == 1.0
+
+        sx.output_units = "MPa"
+        assert sx.stiffness[0, 0] == 1.0e3
+
+        assert sx.output_units == sx.moduli.units
+
 
 class TestThermalExpansion:
 

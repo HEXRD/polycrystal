@@ -2,7 +2,9 @@
 
 from abc import ABC, abstractmethod
 
-from .stiffness_matrix import MatrixComponentSystem, StiffnessMatrix
+from .stiffness_matrix import (
+    MatrixComponentSystem, StiffnessMatrix, DEFAULT_UNITS
+)
 
 import numpy as np
 
@@ -12,7 +14,6 @@ class BaseModuli(ABC):
     """Moduli Handlers"""
     SYSTEMS = MatrixComponentSystem
     DEFAULT_SYSTEM = MatrixComponentSystem.MANDEL
-
     subclass_registry = {}
 
 
@@ -60,6 +61,14 @@ class BaseModuli(ABC):
     @property
     def stiffness(self):
         return self._stiffness
+
+    @property
+    def units(self):
+        return self.stiffness.units
+
+    @units.setter
+    def units(self, v):
+        self.stiffness.units = v
 
     def _check_system(self, v):
         if v not in self.SYSTEMS:

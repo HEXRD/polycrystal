@@ -1,6 +1,6 @@
 """Isotropic moduli handler"""
 
-from .base_moduli import BaseModuli
+from .base_moduli import BaseModuli, DEFAULT_UNITS
 from .stiffness_matrix import StiffnessMatrix
 
 import numpy as np
@@ -18,7 +18,10 @@ class Isotropic(BaseModuli):
        MatrixComponentSystem attribute
     """
 
-    def __init__(self, c11, c12, system=BaseModuli.DEFAULT_SYSTEM):
+    def __init__(self, c11, c12,
+                 system=BaseModuli.DEFAULT_SYSTEM,
+                 units=DEFAULT_UNITS
+                 ):
         self.c11 = c11
         self.c12 = c12
         self.init_system(system)

@@ -1,7 +1,7 @@
 """Handler for hexagonal moduli"""
 
 from .base_moduli import BaseModuli
-from .stiffness_matrix import StiffnessMatrix
+from .stiffness_matrix import StiffnessMatrix, DEFAULT_UNITS
 
 import numpy as np
 
@@ -15,9 +15,14 @@ class Hexagonal(BaseModuli):
        elastic modulus coefficients
     system: Enum
        MatrixComponentSystem attribute
+    units: str
+       units for the stress
     """
 
-    def __init__(self, c11, c12, c13, c33, c44, system=BaseModuli.DEFAULT_SYSTEM):
+    def __init__(self, c11, c12, c13, c33, c44,
+                 system=BaseModuli.DEFAULT_SYSTEM,
+                 units=DEFAULT_UNITS
+                 ):
         self.c11 = c11
         self.c12 = c12
         self.c13 = c13

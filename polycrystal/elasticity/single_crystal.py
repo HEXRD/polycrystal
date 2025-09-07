@@ -2,8 +2,13 @@
 
 import numpy as np
 
+from polycrystal.utils.tensor_data.mandel_system import MandelSystem
+from polycrystal.utils.tensor_data.voigt_system import VoigtSystem
+
 from .moduli_tools import moduli_handler, component_system, Isotropic
 from .moduli_tools.stiffness_matrix import DEFAULT_UNITS
+
+SYSTEMS = Isotropic.SYSTEMS
 
 
 class SingleCrystal:
@@ -57,9 +62,17 @@ class SingleCrystal:
        Instantiate from bulk and shear moduli.
     from_E_nu:
        Instantiate from Young's modulus and Poisson ratio.
+    apply_stiffness:
+       apply the stiffness to array of strain tensors, possibly in a rotated frame
     """
 
     _MSG_NOT_IMPLEMENTED = "This function is not currently implemented."
+
+    system_d = {
+        SYSTEMS.VOIGT_GAMMA: VoigtSystem,
+        SYSTEMS.VOIGT_EPSILON: VoigtSystem,
+        SYSTEMS.MANDEL: MandelSystem,
+    }
 
     def __init__(
             self, symm, cij,
@@ -191,3 +204,40 @@ class SingleCrystal:
     def compliance(self):
         """Compliance matrix in crystal coordinates"""
         return np.linalg.inv(self.stiffness)
+
+    def apply_stiffness(self, eps, rmat=None):
+        """Compute stress from strain, possibly in rotated framework
+
+        eps: array(n, 3, 3)
+           array of strains
+        rmat: None or array(n, 3, 3) or array(3, 3)
+           array of rotation matrices  taking crystal components to sample
+        """
+
+
+        def to_3d(arr):
+            if arr.ndim == 2:
+                if arr.shape != (3, 3):
+                    raise RuntimeError("array shape not 3x3")
+                return arr.reshape((1, 3, 3))
+            elif eps.ndim != 3:
+                raise RuntimeError("array shape incrorrect")
+            else:
+                return arr
+
+
+        eps_3d = to_3d(eps)
+        if rmat is None:
+            System = self.system_d[self.output_system]
+            if self.output_system is SYSTEMS.VOIGT_GAMMA:
+                eps_a = System(eps_3d).symm
+                eps_a[3:] *= 2.0
+            if self.output_system is SYSTEMS.VOIGT_EPSILON:
+                eps_a = System(eps_3d).symm
+            if self.output_system is SYSTEMS.MANDEL:
+                eps_a = System(eps_3d).symm
+
+            sig_a = self.stiffness @ eps_a.T
+            sig_3d = System.from_parts(symm=sig_a.T)
+
+        return sig_3d.matrices

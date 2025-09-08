@@ -209,13 +209,19 @@ class SingleCrystal:
         """Compute stress from strain, possibly in rotated framework
 
         eps: array(n, 3, 3)
-           array of strains
-        rmat: None or array(n, 3, 3) or array(3, 3)
-           array of rotation matrices  taking crystal components to sample
+           array of strains, in a common (sample or crystal) reference frame
+        rmat: None or array(n, 3, 3)
+           array of rotation matrices taking crystal components to sample, or None,
+           if the strains are already in crystal components
         """
+
+        # Here are some helper functions.
 
 
         def to_3d(arr):
+            if arr is None:
+                return arr
+
             if arr.ndim == 2:
                 if arr.shape != (3, 3):
                     raise RuntimeError("array shape not 3x3")
@@ -223,21 +229,42 @@ class SingleCrystal:
             elif eps.ndim != 3:
                 raise RuntimeError("array shape incrorrect")
             else:
+                assert arr.ndim == 3
                 return arr
 
 
-        eps_3d = to_3d(eps)
-        if rmat is None:
-            System = self.system_d[self.output_system]
-            if self.output_system is SYSTEMS.VOIGT_GAMMA:
-                eps_a = System(eps_3d).symm
-                eps_a[3:] *= 2.0
-            if self.output_system is SYSTEMS.VOIGT_EPSILON:
-                eps_a = System(eps_3d).symm
-            if self.output_system is SYSTEMS.MANDEL:
-                eps_a = System(eps_3d).symm
+        def change_basis(mat, rot):
+            """Change of basis taking M -> R @ M @ R.T
 
-            sig_a = self.stiffness @ eps_a.T
-            sig_3d = System.from_parts(symm=sig_a.T)
+            mat: array(n, 3, 3)
+               array of matrices
+            rot: array(n, 3, 3) or None
+               array of rotation matrices, if reference frame is not crystal
+            """
+            if rot is None:
+                return mat
+            else:
+                return rot @ mat @ rot.transpose((1, 3, 2))
 
-        return sig_3d.matrices
+
+        # Here is the main calculation.
+
+        System = self.system_d[self.output_system]
+        eps_s_mat = to_3d(eps)
+        n = len(eps_s_mat)
+
+        eps_c_mat = change_basis(eps_s_mat, rmat)
+
+        eps_c_vec = System(eps_c_mat).symm
+        if self.output_system is SYSTEMS.VOIGT_GAMMA:
+            eps_c_vec[3:] *= 2.0
+
+        sig_c_vec = self.stiffness @ eps_c_vec.T
+
+        sig_c_mat = System.from_parts(symm=sig_c_vec.T).matrices
+
+        sig_s_mat = sig_c_mat if rmat is None else (
+            change_basis(sig_c_mat, rmat.transpose((1, 3, 2)))
+        )
+
+        return sig_s_mat

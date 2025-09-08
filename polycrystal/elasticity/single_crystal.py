@@ -206,54 +206,29 @@ class SingleCrystal:
         return np.linalg.inv(self.stiffness)
 
     def apply_stiffness(self, eps, rmat=None):
-        """Compute stress from strain, possibly in rotated framework
+        """Stress tensors from strain tensors in same reference frame
 
+        Parameters
+        ----------
         eps: array(n, 3, 3)
            array of strains, in a common (sample or crystal) reference frame
         rmat: None or array(n, 3, 3)
            array of rotation matrices taking crystal components to sample, or None,
            if the strains are already in crystal components
+
+        Returns
+        -------
+        sig: array(n, 3, 3)
+           array of stresses in same frame as strains
         """
-
-        # Here are some helper functions.
-
-
-        def to_3d(arr):
-            if arr is None:
-                return arr
-
-            if arr.ndim == 2:
-                if arr.shape != (3, 3):
-                    raise RuntimeError("array shape not 3x3")
-                return arr.reshape((1, 3, 3))
-            elif eps.ndim != 3:
-                raise RuntimeError("array shape incrorrect")
-            else:
-                assert arr.ndim == 3
-                return arr
-
-
-        def change_basis(mat, rot):
-            """Change of basis taking M -> R @ M @ R.T
-
-            mat: array(n, 3, 3)
-               array of matrices
-            rot: array(n, 3, 3) or None
-               array of rotation matrices, if reference frame is not crystal
-            """
-            if rot is None:
-                return mat
-            else:
-                return rot @ mat @ rot.transpose((1, 3, 2))
 
 
         # Here is the main calculation.
 
         System = self.system_d[self.output_system]
-        eps_s_mat = to_3d(eps)
-        n = len(eps_s_mat)
+        eps_s_mat = self._to_3d(eps)
 
-        eps_c_mat = change_basis(eps_s_mat, rmat)
+        eps_c_mat = self._change_basis(eps_s_mat, rmat)
 
         eps_c_vec = System(eps_c_mat).symm
         if self.output_system is SYSTEMS.VOIGT_GAMMA:
@@ -264,7 +239,77 @@ class SingleCrystal:
         sig_c_mat = System.from_parts(symm=sig_c_vec.T).matrices
 
         sig_s_mat = sig_c_mat if rmat is None else (
-            change_basis(sig_c_mat, rmat.transpose((1, 3, 2)))
+            self._change_basis(sig_c_mat, rmat.transpose((0, 2, 1)))
         )
 
         return sig_s_mat
+
+    def apply_compliance(self, sig, rmat=None):
+        """Stress tensors from strain tensors in same reference frame
+
+        Parameters
+        ----------
+        sig: array(n, 3, 3)
+           array of stresses, in a common (sample or crystal) reference frame
+        rmat: None or array(n, 3, 3)
+           array of rotation matrices taking crystal components to sample, or None,
+           if the stresses are already in crystal components
+        Returns
+        -------
+        eps: array(n, 3, 3)
+           array of strains in same frame as stresses
+        """
+
+        System = self.system_d[self.output_system]
+        sig_s_mat = self._to_3d(sig)
+
+        sig_c_mat = self._change_basis(sig_s_mat, rmat)
+
+        sig_c_vec = System(sig_c_mat).symm
+
+        eps_c_vec = self.compliance @ sig_c_vec.T
+        if self.output_system is SYSTEMS.VOIGT_GAMMA:
+            eps_c_vec[3:] *= 0.5
+
+        eps_c_mat = System.from_parts(symm=eps_c_vec.T).matrices
+
+        eps_s_mat = eps_c_mat if rmat is None else (
+            self._change_basis(eps_c_mat, rmat.transpose((0, 2, 1)))
+        )
+
+        return eps_s_mat
+
+    @staticmethod
+    def _to_3d(arr):
+        if arr is None:
+            return arr
+
+        if arr.ndim == 2:
+            if arr.shape != (3, 3):
+                raise RuntimeError("array shape not 3x3")
+            return arr.reshape((1, 3, 3))
+        elif arr.ndim != 3:
+            raise RuntimeError("array shape incrorrect")
+        else:
+            assert arr.ndim == 3
+            return arr
+
+    @staticmethod
+    def _change_basis(mat, rot):
+        """Change of basis taking M -> R @ M @ R.T
+
+        mat: array(n, 3, 3)
+           array of matrices
+        rot: array(n, 3, 3) or None
+           array of rotation matrices, if reference frame is not crystal
+        """
+        if rot is None:
+            return mat
+        else:
+            if len(mat) != len(rot):
+                msg = (
+                    "rotation array needs to be the same "
+                    "length as the matrix array"
+                )
+                raise ValueError(msg)
+            return rot @ mat @ rot.transpose((0, 2, 1))

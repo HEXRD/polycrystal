@@ -18,6 +18,21 @@ class TestSingleCrystal:
     def ID_6X6(cls):
         return np.identity(6)
 
+    @pytest.fixture
+    def rot_90(cls):
+        """90 degree rotations about coordinate axes"""
+        return np.array([
+            [[ 1.,  0.,  0.],
+             [ 0.,  0., -1.],
+             [ 0.,  1.,  0.]],
+            [[ 0.,  0.,  1.],
+             [ 0.,  1.,  0.],
+             [-1.,  0.,  0.]],
+            [[ 0., -1.,  0.],
+             [ 1.,  0.,  0.],
+             [ 0.,  0.,  1.]]
+        ])
+
     def test_identity(self, ID_6X6):
 
         # From K, G
@@ -115,6 +130,26 @@ class TestSingleCrystal:
         assert sx.stiffness[0, 0] == 1.0e3
 
         assert sx.output_units == sx.moduli.units
+
+    def test_apply(self, rot_90):
+        """Test apply_stiffness and apply_compliance methods"""
+        eps0 = np.array([
+            [1, 2, 3],
+            [2, 4, 5],
+            [3, 5, 6],
+        ])
+        sx = SingleCrystal.from_K_G(2/3, 1.0)
+        sig0 = sx.apply_stiffness(eps0)
+        assert np.allclose(sig0, 2 * eps0)
+
+        # Add rotation matrices.
+        eps3 = np.tile(eps0, (3, 1, 1))
+        sig3 = sx.apply_stiffness(eps3, rot_90)
+        assert np.allclose(sig3, 2 * eps3)
+
+        # Apply compliance to get original back.
+        eps3_a = sx.apply_compliance(sig3, rot_90)
+        assert np.allclose(eps3, eps3_a)
 
 
 class TestThermalExpansion:

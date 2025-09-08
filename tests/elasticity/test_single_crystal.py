@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from polycrystal.elasticity.single_crystal import SingleCrystal
+from polycrystal.elasticity.moduli_tools.cubic import Cubic
 
 TOL = 1e-14
 
@@ -17,6 +18,14 @@ class TestSingleCrystal:
     @pytest.fixture
     def ID_6X6(cls):
         return np.identity(6)
+
+    @pytest.fixture
+    def eps0(cls):
+        return np.array([
+            [1, 2, 3],
+            [2, 4, 5],
+            [3, 5, 6],
+        ])
 
     @pytest.fixture
     def rot_90(cls):
@@ -131,13 +140,8 @@ class TestSingleCrystal:
 
         assert sx.output_units == sx.moduli.units
 
-    def test_apply(self, rot_90):
+    def test_apply(self, rot_90, eps0):
         """Test apply_stiffness and apply_compliance methods"""
-        eps0 = np.array([
-            [1, 2, 3],
-            [2, 4, 5],
-            [3, 5, 6],
-        ])
         sx = SingleCrystal.from_K_G(2/3, 1.0)
         sig0 = sx.apply_stiffness(eps0)
         assert np.allclose(sig0, 2 * eps0)
@@ -150,6 +154,19 @@ class TestSingleCrystal:
         # Apply compliance to get original back.
         eps3_a = sx.apply_compliance(sig3, rot_90)
         assert np.allclose(eps3, eps3_a)
+
+    def test_apply_cubic(self, eps0, rot_90):
+        """Test cubic stiffness/compliance under rotation"""
+        mod = Cubic.from_K_Gd_Gs(3., 2, 5.)
+        sx = SingleCrystal('cubic', mod.cij)
+
+        eps3 = np.tile(eps0, (3, 1, 1))
+        sig3 = sx.apply_stiffness(eps3, rot_90)
+
+        # Stresses should be the same since cubic crystal is invariant under 90-degree
+        # rotations.
+        assert np.allclose(sig3[0], sig3[1])
+        assert np.allclose(sig3[0], sig3[2])
 
 
 class TestThermalExpansion:

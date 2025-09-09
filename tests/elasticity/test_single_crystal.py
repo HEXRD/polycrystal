@@ -3,6 +3,9 @@ import numpy as np
 import pytest
 
 from polycrystal.elasticity.single_crystal import SingleCrystal
+from polycrystal.elasticity.moduli_tools.cubic import Cubic
+from polycrystal.orientations.crystalsymmetry import get_symmetries
+
 
 TOL = 1e-14
 
@@ -17,6 +20,30 @@ class TestSingleCrystal:
     @pytest.fixture
     def ID_6X6(cls):
         return np.identity(6)
+
+    @pytest.fixture
+    def eps0(cls):
+        """Test strain data"""
+        return np.array([
+            [1, 2, 3],
+            [2, 4, 5],
+            [3, 5, 6],
+        ])
+
+    @pytest.fixture
+    def rot_90(cls):
+        """90 degree rotations about coordinate axes"""
+        return np.array([
+            [[ 1.,  0.,  0.],
+             [ 0.,  0., -1.],
+             [ 0.,  1.,  0.]],
+            [[ 0.,  0.,  1.],
+             [ 0.,  1.,  0.],
+             [-1.,  0.,  0.]],
+            [[ 0., -1.,  0.],
+             [ 1.,  0.,  0.],
+             [ 0.,  0.,  1.]]
+        ])
 
     def test_identity(self, ID_6X6):
 
@@ -115,6 +142,84 @@ class TestSingleCrystal:
         assert sx.stiffness[0, 0] == 1.0e3
 
         assert sx.output_units == sx.moduli.units
+
+    def test_apply(self, rot_90, eps0):
+        """Test apply_stiffness and apply_compliance methods"""
+        sx = SingleCrystal.from_K_G(2/3, 1.0)
+        sig0 = sx.apply_stiffness(eps0)
+        assert np.allclose(sig0, 2 * eps0)
+
+        # Add rotation matrices.
+        eps3 = np.tile(eps0, (3, 1, 1))
+        sig3 = sx.apply_stiffness(eps3, rot_90)
+        assert np.allclose(sig3, 2 * eps3)
+
+        # Apply compliance to get original back.
+        eps3_a = sx.apply_compliance(sig3, rot_90)
+        assert np.allclose(eps3, eps3_a)
+
+    def test_apply_cubic(self, eps0):
+        """Test cubic stiffness/compliance under rotation"""
+        sym = 'cubic'
+        mod = Cubic.from_K_Gd_Gs(3., 2, 5.)
+        sx = SingleCrystal('cubic', mod.cij)
+
+        cubsym = get_symmetries(sym)
+        rmats = cubsym.rmats
+        nsym = len(rmats)
+
+        eps3 = np.tile(eps0, (nsym, 1, 1))
+        sig3 = sx.apply_stiffness(eps3, rmats)
+
+        # Stresses should be the same since the crystal is invariant under it's
+        # symmetry group.
+
+        assert np.allclose(sig3, np.tile(sig3[0], (nsym, 1, 1)))
+
+        # Verify compliance.
+        eps3_a = sx.apply_compliance(sig3, rmats)
+        assert np.allclose(eps3, eps3_a)
+
+    def test_apply_hexagonal(self, eps0):
+        """Test hexagonal stiffness/compliance under rotation"""
+        # Note that you have to choose moduli to ensure the stiffness is nonsingular.
+        # The choice: [5, 4, 3, 2, 1] apparently led to a singular matrix.
+
+        sym = 'hexagonal'
+        mod = [5.0, 6.2, 3.2, 1.9, 4.2]
+        sx = SingleCrystal(sym, mod)
+        sx.system = "MANDEL"
+
+        hexsym = get_symmetries(sym)
+        rmats = hexsym.rmats
+        nsym = len(rmats)
+
+        eps3 = np.tile(eps0, (nsym, 1, 1))
+        sig3 = sx.apply_stiffness(eps3, rmats)
+
+        # Stresses should be the same since the crystal is invariant under it's
+        # symmetry group.
+
+        assert np.allclose(sig3, np.tile(sig3[0], (nsym, 1, 1)))
+
+        # Verify compliance.
+        eps3_a = sx.apply_compliance(sig3, rmats)
+        print("eps3:\n", eps3[:2], "\nsig3\n", sig3[:2], "\neps3_a\n", eps3_a[:2])
+        assert np.allclose(eps3, eps3_a)
+
+
+    def test_change_of_basis(self, eps0, rot_90):
+        """Test change of basis"""
+        cob = SingleCrystal._change_basis(eps0, None)
+        assert np.allclose(eps0, cob)
+
+        eps3 = np.tile(eps0, (3, 1, 1))
+        cob3 = SingleCrystal._change_basis(eps0, rot_90)
+
+        for i in (0, 1, 2):
+            rot_i = rot_90[i]
+            cob_i = rot_i @ eps0 @ rot_i.T
+            assert np.allclose(cob_i, cob3[i])
 
 
 class TestThermalExpansion:

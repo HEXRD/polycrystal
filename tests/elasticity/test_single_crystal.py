@@ -204,7 +204,6 @@ class TestSingleCrystal:
 
         # Verify compliance.
         eps3_a = sx.apply_compliance(sig3, rmats)
-        print("eps3:\n", eps3[:2], "\nsig3\n", sig3[:2], "\neps3_a\n", eps3_a[:2])
         assert np.allclose(eps3, eps3_a)
 
 

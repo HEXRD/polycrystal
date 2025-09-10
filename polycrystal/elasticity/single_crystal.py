@@ -298,6 +298,15 @@ class SingleCrystal:
     def _change_basis(mat, rot):
         """Change of basis taking M -> R @ M @ R.T
 
+        Here the typical use here is converting a matrix in cyrstal components to
+        one in sample components, where R is the matrix that takes cyrstal components
+        of vectors to sample components. In that case:
+
+        M_s = R @ M_c @ R.T
+
+        because evec_c = R.T evec_s, and svec_c = M_c @ evec_c, and svec_s = R @ svec_c
+        So svec_s = (R @ M_c @ R.T) evec_s.
+
         mat: array(n, 3, 3)
            array of matrices
         rot: array(n, 3, 3) or None

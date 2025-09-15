@@ -32,12 +32,17 @@ def check_block(m1, m2, block, factor=1.0):
     return np.allclose(factor * m1[sl], m2[sl])
 
 
+
 class TestStiffness:
 
     @pytest.fixture
-    def all_ones_vg(cls):
+    def upper_indices(cls):
+        return np.triu_indices(6)
+
+    @pytest.fixture
+    def all_ones_vg(cls, upper_indices):
         all_1 = np.ones((6, 6))
-        cij_upper = all_1[ np.triu_indices(6)]
+        cij_upper = all_1[upper_indices]
         units = "MPa"
         return stiffness_matrix.StiffnessMatrix(
             cij_upper, SYSTEMS.VOIGT_GAMMA, units
@@ -78,3 +83,37 @@ class TestStiffness:
         mat_ve_gpa = all_ones_vg.matrix
         all_ones_vg.units = "MPa"
         np.allclose(all_ones_vg.matrix, 1e-3 * mat_ve_gpa)
+
+    def test_instantiation(self, all_ones_vg, upper_indices):
+        """Test instantiation from cij gives same stiffess for all systems"""
+        original_system = SYSTEMS.VOIGT_GAMMA
+
+        # VOIGT_GAMMA
+        check_system = SYSTEMS.VOIGT_GAMMA
+        all_ones_vg.system = check_system
+        new_vg = stiffness_matrix.StiffnessMatrix(
+            all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
+        )
+        new_vg.system = original_system
+        all_ones_vg.system = original_system
+        assert np.allclose(all_ones_vg.matrix, new_vg.matrix)
+
+        # MANDEL
+        check_system = SYSTEMS.MANDEL
+        all_ones_vg.system = check_system
+        new_vg = stiffness_matrix.StiffnessMatrix(
+            all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
+        )
+        new_vg.system = original_system
+        all_ones_vg.system = original_system
+        assert np.allclose(all_ones_vg.matrix, new_vg.matrix)
+
+        # VOIGT_EPSILON
+        check_system = SYSTEMS.VOIGT_EPSILON
+        all_ones_vg.system = check_system
+        new_vg = stiffness_matrix.StiffnessMatrix(
+            all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
+        )
+        new_vg.system = original_system
+        all_ones_vg.system = original_system
+        assert np.allclose(all_ones_vg.matrix, new_vg.matrix)

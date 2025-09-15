@@ -84,14 +84,22 @@ class StiffnessMatrix:
             raise ValueError("`system` must be an attribtue of MatrixComponentSystem")
         self._system = system
 
-        self._units = self.ureg.parse_expression(units)
+        # Adding `str(units)` makes it work even when the input is a pint.Unit.
+        self._units = self.ureg.parse_expression(str(units))
         self._matrix = self._fill_cij(cij) * self.units
 
-    @staticmethod
-    def _fill_cij(cij):
+    def _fill_cij(self, cij):
         mat = np.zeros((6, 6))
         mat[_UT_INDICES] = cij
         mat[_LT_INDICES] = cij[_LT_CIJ]
+
+        # Note that the VOIGT_EPSILON system may not be symmetric as the lower
+        # left 3x3 submatrix is one half the upper right. This corrects for
+        # that.
+        if self.system is MatrixComponentSystem.VOIGT_EPSILON:
+            for i in range(3):
+                for j in range(3,6):
+                    mat[j, i] = 0.5 * mat[i, j]
         return mat
 
     @property
@@ -119,9 +127,8 @@ class StiffnessMatrix:
 
     @units.setter
     def units(self, v):
-        uv = self.ureg.parse_expression(v)
-        self._matrix.ito(uv)
-        self._units = uv
+        self._matrix.ito(v)
+        self._units = v
 
     def _rescale_matrix(self, scale):
         self._matrix[:3, 3:] *= scale.up_right

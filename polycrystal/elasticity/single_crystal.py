@@ -298,7 +298,7 @@ class SingleCrystal:
     def _change_basis(mat, rot):
         """Change of basis taking M -> R @ M @ R.T
 
-        Here the typical use here is converting a matrix in cyrstal components to
+        The typical use here is converting a matrix in cyrstal components to
         one in sample components, where R is the matrix that takes cyrstal components
         of vectors to sample components. In that case:
 

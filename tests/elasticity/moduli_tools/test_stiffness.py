@@ -91,7 +91,6 @@ class TestStiffness:
         # VOIGT_GAMMA
         check_system = SYSTEMS.VOIGT_GAMMA
         all_ones_vg.system = check_system
-        print("\nSystem: ", all_ones_vg.system, "\nunits: ", all_ones_vg.units)
         new_vg = stiffness_matrix.StiffnessMatrix(
             all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
         )
@@ -102,7 +101,6 @@ class TestStiffness:
         # MANDEL
         check_system = SYSTEMS.MANDEL
         all_ones_vg.system = check_system
-        print("\nSystem: ", all_ones_vg.system, "\nunits: ", all_ones_vg.units)
         new_vg = stiffness_matrix.StiffnessMatrix(
             all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
         )
@@ -113,8 +111,6 @@ class TestStiffness:
         # VOIGT_EPSILON
         check_system = SYSTEMS.VOIGT_EPSILON
         all_ones_vg.system = check_system
-        print("\nSystem: ", all_ones_vg.system, "\nunits: ", all_ones_vg.units)
-
         new_vg = stiffness_matrix.StiffnessMatrix(
             all_ones_vg.matrix[upper_indices], check_system, all_ones_vg.units,
         )

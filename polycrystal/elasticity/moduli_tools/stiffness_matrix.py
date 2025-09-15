@@ -84,7 +84,8 @@ class StiffnessMatrix:
             raise ValueError("`system` must be an attribtue of MatrixComponentSystem")
         self._system = system
 
-        self._units = self.ureg.parse_expression(units)
+        # Adding `str(units)` makes it work even when the input is a pint.Unit.
+        self._units = self.ureg.parse_expression(str(units))
         self._matrix = self._fill_cij(cij) * self.units
 
     @staticmethod
@@ -119,9 +120,8 @@ class StiffnessMatrix:
 
     @units.setter
     def units(self, v):
-        uv = self.ureg.parse_expression(v)
-        self._matrix.ito(uv)
-        self._units = uv
+        self._matrix.ito(v)
+        self._units = v
 
     def _rescale_matrix(self, scale):
         self._matrix[:3, 3:] *= scale.up_right

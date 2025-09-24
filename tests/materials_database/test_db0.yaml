@@ -1,0 +1,13 @@
+# Sample data file for testing.
+
+process: process-1
+materials:
+- name : mat-1
+- name : mat-2
+
+---
+process: process-2
+materials:
+- name : p2-m1
+- name : p2-m2
+- name : p2-m3

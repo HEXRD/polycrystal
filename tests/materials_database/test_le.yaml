@@ -1,0 +1,48 @@
+# Data file for testing linear elasticity loader.
+
+process: linear_elasticity
+materials:
+
+- name     : iso-mat-Enu
+  units    : GPa
+  symmetry : isotropic
+  moduli   :
+        E  : 105.3
+        nu : 0.22
+  system   : VOIGT_EPSILON
+  reference: no-ref
+
+- name     : cub-mat
+  units    : MPa
+  symmetry : cubic
+  system   : MANDEL
+  moduli   :
+    c11 : 11.1
+    c12 : 12.1
+    c44 : 44.1
+  reference: cub-mat-ref
+
+- name     : hex-mat
+  symmetry : hexagonal
+  units    : psi
+  system   : VOIGT_GAMMA
+  moduli   :
+    c11 : 11.0
+    c12 : 12.0
+    c13 : 13.0
+    c44 : 44.0
+    c66 : 66.0
+  reference: hex-mat-ref
+
+- name     : tet-mat
+  units    : psi
+  symmetry : tetragonal
+  moduli   :
+    cij    : [105.0, 39.8, 2.9, 4.6, 0, 0,
+             204.0, 9.4, -3.5, 0, 0,
+             36.3, 0, 0, 0,
+             11.0, 0, 0,
+             23.0, 4.0,
+             24.69]
+  system   : VOIGT_GAMMA
+  reference: none-again

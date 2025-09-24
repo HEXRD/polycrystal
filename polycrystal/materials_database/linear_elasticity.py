@@ -47,8 +47,19 @@ class LinearElasticMaterial(BaseLoader):
         return self.symmetry if self.symmetry in symms else "triclinic"
 
     @property
-    def units(self):"""
+    def units(self):
+        """Units"""
+        return self.yaml_d["units"]
+
+    @property
+    def system(self):
+        """System"""
         return self.yaml_d["system"]
+
+    @property
+    def reference(self):
+        """System"""
+        return self.yaml_d["reference"]
 
     @property
     def cij(self):

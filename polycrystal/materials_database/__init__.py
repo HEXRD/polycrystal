@@ -59,9 +59,10 @@ class MaterialsDataBase:
         Instance
            instance of material class correpsonding to material process
         """
+        matl_d = self.processes[process]
         Loader = get_loader(process)
         try:
-            entry = self.processes[name]
+            entry = matl_d[name]
         except:
             raise KeyError(f"material '{name}' not found in database")
 

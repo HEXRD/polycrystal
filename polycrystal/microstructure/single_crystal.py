@@ -29,10 +29,10 @@ class SingleCrystal(CgoMicrostructure):
         return 1
 
     def grain(self, x):
-        return np.zeros(len(x))
+        return np.zeros(len(x), dtype=int)
 
     def phase(self, g):
-        return np.zeros(len(g))
+        return np.zeros(len(g), dtype=int)
 
     @property
     def orientation_list(self):

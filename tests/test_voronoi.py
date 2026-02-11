@@ -9,7 +9,6 @@ from polycrystal.microstructure import voronoi
 @pytest.fixture
 def voronoi_2():
     seeds = np.array([[0.25, 0], [0.75, 0]])
-    matrix = np.array
     return voronoi.Voronoi(seeds, None)
 
 
@@ -58,6 +57,12 @@ def test_grain(voronoi_2):
     x = np.linspace((0, 0), (1, 0), 10)
     grains = voronoi_2.grain(x)
     assert np.all(grains[:5] == 0) and np.all(grains[5:] == 1)
+
+
+def test_phase(voronoi_2):
+    assert voronoi_2.num_phases == 1
+    phases = voronoi_2.phase([0, 1, 1, 0, 1])
+    assert np.all(phases == np.zeros(5))
 
 
 def test_grain_matrix(voronoi_2m):

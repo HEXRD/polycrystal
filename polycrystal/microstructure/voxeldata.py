@@ -84,9 +84,9 @@ class VoxelData(CgoMicrostructure):
 
         return self.gids[vox[:,0], vox[:,1], vox[:,2]]
 
-    def phase(self, x):
-        """Determine grain ID for point x"""
-        return 0
+    def phase(self, g):
+        """Determine grain ID for grain `g`"""
+        return np.zeros(len(g), dtype=int)
 
     @property
     def orientation_list(self):

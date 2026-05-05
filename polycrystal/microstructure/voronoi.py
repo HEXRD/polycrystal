@@ -29,6 +29,10 @@ class Voronoi(CgoMicrostructure):
        array giving ranges of each coordinate
     matrix: (optional) array (3, 3)
        grain shape matrix
+
+    Notes
+    -----
+    * This produces a single phase microstructure.
     """
 
     def __init__(self, seeds, orientations, box=None, matrix=None):
@@ -127,7 +131,7 @@ class Voronoi(CgoMicrostructure):
         return inds
 
     def phase(self, g):
-        return 0
+        return np.zeros(len(g), dtype=int)
 
     @property
     def orientation_list(self):

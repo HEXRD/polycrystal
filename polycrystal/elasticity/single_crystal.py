@@ -147,7 +147,6 @@ class SingleCrystal:
         """
         system = kwargs.get("system", cls.DEFAULT_SYSTEM)
         cij =  Cubic.cij_from_K_Gd_Gs(K, Gd, Gs, system)
-        print("cij: ", cij, system)
         return cls("cubic", cij, **kwargs)
 
     @property

@@ -3,6 +3,13 @@ import sys
 
 from setuptools import setup, find_packages
 
+install_reqs = [
+    'numpy',
+    'scipy',
+    'pytest',
+    'pint',
+    'pyyaml'
+]
 
 setup(
     name = 'polycrystal',
@@ -17,11 +24,5 @@ setup(
         'Topic :: Scientific/Engineering',
         ],
     packages = find_packages(),
+    install_requires = install_reqs,
     )
-install_reqs = [
-    'numpy',
-    'scipy',
-    'pytest',
-    'pint',
-    'pyyaml'
-]

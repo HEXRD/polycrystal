@@ -43,9 +43,6 @@ class Multiphase(CgoMicrostructure):
         _msg = "phase array has wrong shape"
         assert (len(self._phase_a) == self.num_grains), _msg
 
-    def __contains__(self, x):
-        return np.ones(len(x), dtype=bool)
-
     @property
     def num_grains(self):
         return len(self.orientation_list)

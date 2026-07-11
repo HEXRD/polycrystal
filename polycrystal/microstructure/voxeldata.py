@@ -77,12 +77,9 @@ class VoxelData(CgoMicrostructure):
         return tuple(xdivs)
 
     def grain(self, x):
-        n = len(x)
-        vox = np.zeros((n, 3), dtype=int)
-        for i in range(n):
-            vox[i] = self.voxel_ijk(x[i])
-
-        return self.gids[vox[:,0], vox[:,1], vox[:,2]]
+        dx = x - self.v0
+        vox = np.minimum((dx / self.dv).astype(int), np.array(self.shape) - 1)
+        return self.gids[vox[:, 0], vox[:, 1], vox[:, 2]]
 
     def phase(self, g):
         """Determine grain ID for grain `g`"""

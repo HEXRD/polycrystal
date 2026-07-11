@@ -42,24 +42,18 @@ def multiply(q_1, q_2):
     The result is not processed to enforce nonnegativity of the first component
     (as was done in the matlab  OdfPf package).
     """
-    # Reshape q1/q2 if 1D
     if q_1.ndim == 1:
-        q1 = q_1.copy().reshape((1,4))
-    else:
-        q1 = q_1
-
+        q_1 = q_1.copy().reshape((1, 4))
     if q_2.ndim == 1:
-        q2 = q_2.copy().reshape((1,4))
-    else:
-        q2 = q_2
+        q_2 = q_2.copy().reshape((1, 4))
 
-    n1 = len(q1)
-    n2 = len(q2)
+    n1 = len(q_1)
+    n2 = len(q_2)
     n = np.maximum(n1, n2)
-    s1 = q1[:, 0].reshape((n1,1))
-    v1 = q1[:, 1:].reshape((n1,3))
-    s2 = q2[:, 0].reshape((n2,1))
-    v2 = q2[:, 1:].reshape((n2,3))
+    s1 = q_1[:, 0].reshape((n1,1))
+    v1 = q_1[:, 1:].reshape((n1,3))
+    s2 = q_2[:, 0].reshape((n2,1))
+    v2 = q_2[:, 1:].reshape((n2,3))
     qs = s1*s2 - np.sum(v1*v2, axis=1).reshape((n,1))
     qv = (s1*v2) + (s2*v1) + np.cross(v1, v2)
     qprod = np.hstack((qs, qv))
@@ -217,12 +211,12 @@ def random_quats(n, return_matrices=False):
     ----------
     n: int
        the number of orientations to generate
-    return_matrices: bool, defaul = True
+    return_matrices: bool, default = False
        if True return matrices, otherwise quaternions
     """
     q = np.random.standard_normal((n, 4))
     nrm = np.linalg.norm(q, axis=1)
-    if nrm.min() == 0.0:
+    if nrm.min() < 1e-10:
         raise ValueError("generated zero magnitude vector, try again")
     qrand = q/nrm.reshape((n, 1))
 

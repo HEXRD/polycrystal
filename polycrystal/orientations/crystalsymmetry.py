@@ -156,6 +156,11 @@ class _Registry(object):
     @classmethod
     def get(cls, name):
         """return instance associated with name"""
+        if name not in cls.registry:
+            available = ", ".join(sorted(cls.registry.keys()))
+            raise KeyError(
+                f"Unknown symmetry {name!r}. Available: {available}"
+            )
         return cls.registry[name]
     #
     pass  # end class

@@ -70,7 +70,6 @@ class SingleCrystal:
        coefficient of thermal expansion as a function of a reference temperature
     """
 
-    _MSG_NOT_IMPLEMENTED = "This function is not currently implemented."
     DEFAULT_SYSTEM = SYSTEMS.VOIGT_GAMMA
 
     system_d = {
@@ -297,7 +296,7 @@ class SingleCrystal:
                 raise RuntimeError("array shape not 3x3")
             return arr.reshape((1, 3, 3))
         elif arr.ndim != 3:
-            raise RuntimeError("array shape incrorrect")
+            raise RuntimeError(f"array shape incorrect: got ndim={arr.ndim}")
         else:
             assert arr.ndim == 3
             return arr

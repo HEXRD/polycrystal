@@ -11,53 +11,6 @@ class MandelSystem(BaseSystem):
     _system_name = "Mandel"
 
     @classmethod
-    def from_parts(cls, symm=None, skew=None):
-        """Build matrices from parts additively
-
-        This builds the matrix by specfiying the symmetric and skew parts
-        separately.
-
-        Parameters
-        ----------
-        symm: array (n, 6)
-          symmetric part as 6-vector in Mandel orthonormal basis
-        skew: array (n, 3)
-          skew part
-        """
-        # First, check that everything has compatible shapes.
-        dim_sym, dim_skw = 6, 3
-
-        len_sym = cls._check_part(symm, dim_sym)
-        len_skw = cls._check_part(skew, dim_skw)
-
-        len = max(len_sym, len_skw)
-
-        if len_sym == 0:
-            symm = np.zeros((len, dim_sym))
-        else:
-            if len_sym != len:
-                msg = "symm and skew parts must have same length"
-                raise ValueError(msg)
-            # This handles the 1D array case.
-            symm = symm.reshape((len, dim_sym))
-
-        if len_skw == 0:
-            skew = np.zeros((len, dim_skw))
-        else:
-            if len_skw != len:
-                msg = "symm and skew parts must have same length"
-                raise ValueError(msg)
-            # This handles the 1D array case.
-            skew = skew.reshape((len, dim_skw))
-
-        comps = np.hstack((symm, skew))
-        mats = cls.to_matrices(comps)
-        ten = cls(mats)
-        ten.components = comps
-
-        return ten
-
-    @classmethod
     def to_components(cls, matrices):
         """This sets the `_components` attribute"""
         m = matrices

@@ -65,6 +65,47 @@ class BaseSystem:
         """Set matrices from components"""
         pass
 
+    @classmethod
+    def from_parts(cls, symm=None, skew=None):
+        """Build matrices from parts additively
+
+        Parameters
+        ----------
+        symm: array (n, 6)
+          symmetric part as 6-vector in orthonormal basis
+        skew: array (n, 3)
+          skew part
+        """
+        dim_sym, dim_skw = 6, 3
+
+        len_sym = cls._check_part(symm, dim_sym)
+        len_skw = cls._check_part(skew, dim_skw)
+
+        n = max(len_sym, len_skw)
+        if n == 0:
+            raise ValueError("all parts are None")
+
+        if len_sym == 0:
+            symm = np.zeros((n, dim_sym))
+        else:
+            if len_sym != n:
+                raise ValueError("symm and skew parts must have same length")
+            symm = symm.reshape((n, dim_sym))
+
+        if len_skw == 0:
+            skew = np.zeros((n, dim_skw))
+        else:
+            if len_skw != n:
+                raise ValueError("symm and skew parts must have same length")
+            skew = skew.reshape((n, dim_skw))
+
+        comps = np.hstack((symm, skew))
+        mats = cls.to_matrices(comps)
+        ten = cls(mats)
+        ten.components = comps
+
+        return ten
+
     @staticmethod
     def _check_part(part, dim=None):
         """checks for expected input shape (2D) and length

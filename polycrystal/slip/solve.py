@@ -115,15 +115,15 @@ class StateData:
         Parameters
         ----------
         num_pts: int
-            Number of grains (points).
-        value: float
-            Initial hardness value applied to all hardness entries.
-            Back-stress entries (when present) are initialised to 0.
+            number of grains (points).
+        value: float | 2-tuple
+            if a float, then it is applied to all state variables; if a tuple
+            of two values, then the values are split between the state variables
+            with strength in the first half and backstress in the second, and
+            `num_sv` must be even.
         num_sv: int
-            Number of state variables per grain. Accepted values:
-            ``1`` (single scalar hardness, returns flat array),
-            ``12`` (one hardness per slip system),
-            ``24`` (12 hardness + 12 back-stress).
+            Number of state variables per grain. Even number for models with
+            a backstress.
 
         Returns
         -------
@@ -131,19 +131,22 @@ class StateData:
             Shape ``(num_pts,)`` when *num_sv* is 1, else
             ``(num_pts, num_sv)``.
         """
-        flat = False
-        if num_sv == 1:
-            g_init = (value,)
-            flat = True
-        elif num_sv == 12:
-            g_init = 12 * (value,)
-        elif num_sv == 24:
-            g_init = 12 * (value,) + 12 * (0.0,)
-        else:
-            raise RuntimeError("material model not recognized")
+        if isinstance(value, tuple):
+            if np.mod(num_sv, 2) != 0:
+                raise RuntimeError("num_sv must be even")
+            n_2 = num_sv // 2
+            strength, backstress = value
+            g_init = n_2 * (strength,) + n_2 * (backstress,)
 
+        elif num_sv == 1:
+            g_init = (value,)
+
+        else:
+            g_init = num_sv * (value,)
+
+        # Now tile the initial values over all the grains.
         rv = np.tile(g_init, (num_pts, 1))
-        if flat:
+        if num_sv == 1:
             rv = rv.flatten()
 
         return rv

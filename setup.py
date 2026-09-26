@@ -25,4 +25,9 @@ setup(
         ],
     packages = find_packages(),
     install_requires = install_reqs,
+    entry_points = {
+        'console_scripts': [
+            'evolve_slip = polycrystal.scripts.evolve_slip:cli',
+        ],
+    },
     )
